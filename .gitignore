@@ -20,3 +20,20 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+# Eclipse
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+.metadata
+.project
+.classpath
+.settings/
+.loadpath
+local.properties
+
+# Maven
+target/

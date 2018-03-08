@@ -37,6 +37,3 @@ local.properties
 
 # VSCode IDE
 .VSCode
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/

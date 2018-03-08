@@ -1,4 +1,3 @@
 # edi-debatcher
 
-junk files, ugly work in progress. 
-do not use.
+Junk files, ugly work in progress. Do not use.

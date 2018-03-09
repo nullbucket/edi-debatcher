@@ -2,7 +2,8 @@ package org.null0.edi.debatcher;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import org.null0.edi.debatcher.validation.EncounterEdiValidator.ERROR;
+
+import org.null0.edi.debatcher.EncounterEdiValidator.ERROR;
 
 // TODO: This was migrated from something too complex; simplify
 public class DebatcherException extends Exception {

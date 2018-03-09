@@ -1,4 +1,4 @@
-package org.null0.edi.debatcher.validation;
+package org.null0.edi.debatcher;
 
 import java.util.HashMap;
 import java.util.Map;

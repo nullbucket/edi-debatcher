@@ -1,4 +1,4 @@
-package org.null0.edi.debatcher.validation;
+package org.null0.edi.debatcher;
 
 import java.io.InputStream;
 
@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO: This class is unused. Do we need to just delete it, or is EncounterEdiValidatorImpl missing something that the validateRules method is doing?
 public class EdiFileValidator {
 
 	private static final Logger logger = LoggerFactory.getLogger(EdiFileValidator.class);

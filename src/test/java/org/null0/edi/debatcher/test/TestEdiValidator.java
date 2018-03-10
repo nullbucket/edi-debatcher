@@ -13,11 +13,11 @@ import org.junit.Ignore;
 
 import org.null0.edi.debatcher.Config;
 import org.null0.edi.debatcher.Debatcher;
-import org.null0.edi.debatcher.validation.EncounterEdiValidatorImpl;
+import org.null0.edi.debatcher.EncounterEdiValidatorImpl;
 import org.null0.exception.DebatcherException;
 import org.null0.metadata.services.DeBatchedDataLogger;
 import org.null0.edi.debatcher.MetadataLogger;
-import org.null0.services.EncounterEdiValidator;
+import org.null0.edi.debatcher.EncounterEdiValidator;
 
 public class TestEdiValidator {
 

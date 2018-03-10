@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import org.null0.edi.debatcher.FileProperties;
 
+// TODO: don't think this is used. See why.
 public class Extractor1 {
 
 	private URL edifilepath;

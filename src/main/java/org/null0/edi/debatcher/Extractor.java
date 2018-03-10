@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 
+// TODO: don't think this is used. See why.
 public class Extractor {
 
 	public Extractor(URL edifilepath) {

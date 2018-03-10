@@ -1,4 +1,4 @@
-package org.null0.edi.debatcher.model;
+package org.null0.edi.debatcher;
 
 public class HierarchicalLevel {
 

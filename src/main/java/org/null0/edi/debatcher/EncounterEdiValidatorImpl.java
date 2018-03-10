@@ -1,10 +1,9 @@
-package org.null0.edi.debatcher.validation;
+package org.null0.edi.debatcher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.null0.edi.debatcher.DebatcherException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

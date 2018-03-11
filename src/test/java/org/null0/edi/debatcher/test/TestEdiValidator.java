@@ -4,27 +4,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Properties;
 
-import org.junit.BeforeClass;
 import org.junit.Ignore;
-
 import org.null0.edi.debatcher.Config;
 import org.null0.edi.debatcher.Debatcher;
-import org.null0.edi.debatcher.EncounterEdiValidatorImpl;
-import org.null0.exception.DebatcherException;
-import org.null0.metadata.services.DeBatchedDataLogger;
-import org.null0.edi.debatcher.MetadataLogger;
+import org.null0.edi.debatcher.DebatcherException;
 import org.null0.edi.debatcher.EncounterEdiValidator;
+import org.null0.edi.debatcher.EncounterEdiValidatorDefault;
+import org.null0.edi.debatcher.MetadataLoggerDefault;
 
 public class TestEdiValidator {
-
-	private MetadataLogger metadataLogger = new DeBatchedDataLogger();
-	private static final String idMMP = "ENH9999";
+	
 	private String outputLocation = "/home/developer/lnxshare/output/";
-	private static SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.dateFormatForFileNames);
+	static String DateFormatForFileNames = "yyyyMMdd-HHmmss-SSS";
 
 	@org.junit.Before
 	public void setup() throws Exception {
@@ -46,7 +38,7 @@ public class TestEdiValidator {
 	public void test_ISA11() throws Exception {
 
 		String file = "InvalidISA11";
-		new Debatcher(metadataLogger).debatch(file, getIs(file));
+		new Debatcher(new MetadataLoggerDefault()).debatch(file, getIs(file));
 	}
 
 	// Test
@@ -210,19 +202,11 @@ public class TestEdiValidator {
 	public void validate(String file, String errorCode) throws Exception {
 		long batchId = 0;
 		try {
-			batchId = new MetadataServicesImpl().insertSubmission(idMMP, file, file, file,
-					Constants.METADATA_STATUS.Initial, dateFormat.format(new Date()), 0, dateFormat.format(new Date()));
-			// String validation = Config.getConfigPropertyValue("integration.properties",
-			// "validation");
-			// EncounterEdiValidatorImpl ediValidator = new
-			// EncounterEdiValidatorImpl(Boolean.parseBoolean(validation));
-			EncounterEdiValidatorImpl ediValidator = new EncounterEdiValidatorImpl(true);
-			new Debatcher(metadataLogger, ediValidator).debatch(file, batchId, getIs(file), outputLocation, false);
+			EncounterEdiValidator ediValidator = new EncounterEdiValidatorDefault(true);
+			new Debatcher(new MetadataLoggerDefault(), ediValidator).debatch(file, batchId, getIs(file), outputLocation, false);
 			fail("Expecting error " + errorCode);
-		} catch (Exception e) {
+		} catch (DebatcherException e) {
 			assertEquals(errorCode, e.getErrorCode());
-			// new MetadataServicesImpl().updateSubmission(batchId,
-			// Constants.METADATA_STATUS.Error);
 		}
 	}
 

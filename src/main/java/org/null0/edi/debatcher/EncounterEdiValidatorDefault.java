@@ -7,14 +7,14 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EncounterEdiValidatorImpl implements EncounterEdiValidator {
+public class EncounterEdiValidatorDefault implements EncounterEdiValidator {
 
-	private static final Logger logger = LoggerFactory.getLogger(EncounterEdiValidatorImpl.class);
+	private static final Logger logger = LoggerFactory.getLogger(EncounterEdiValidatorDefault.class);
 	private boolean rejectOnValidationError;
 	private static final boolean stopAtFirstValidationFailure = true;
 	private List<String> isa13List = new ArrayList<String>();
 
-	public EncounterEdiValidatorImpl(boolean rejectOnValidationError) {
+	public EncounterEdiValidatorDefault(boolean rejectOnValidationError) {
 		this.rejectOnValidationError = rejectOnValidationError;
 	}
 
@@ -153,6 +153,9 @@ public class EncounterEdiValidatorImpl implements EncounterEdiValidator {
 			}
 			break;
 		case ST03:
+			// TODO: this is the only logic that is domain-specific (specific to health care claims); the rest is generic EDI
+			// If we removed this logic, then all the other code in this class could just be the base class, and the logic below
+			// could go to a subclass.
 			if ((CLAIM_TYPE.PRO.name().equals(compareWithData) && !Arrays.asList(validSt03ForP).contains(data))
 					|| (CLAIM_TYPE.INS.name().equals(compareWithData) && !Arrays.asList(validSt03ForI).contains(data))
 					|| !CLAIM_TYPE.PRO.name().equals(compareWithData)

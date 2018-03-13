@@ -24,12 +24,19 @@ public class FileProperties {
 	public FileProperties() {
 		try {
 			Properties prop = new Properties();
-			prop.load(FileProperties.class.getClassLoader().getResourceAsStream("edi-parameters.properties"));	
+			prop.load(getClass().getClassLoader().getResourceAsStream("edi-parameters.properties"));	
 			
 			dataElementSeparator = prop.getProperty("dataElementSeparator").charAt(0);
 			dataRepetitionSeparator =  prop.getProperty("dataRepetitionSeparator").charAt(0);
 			componentElementSeparator = prop.getProperty("componentElementSeparator").charAt(0);
 			segmentTerminator = prop.getProperty("segmentTerminator").charAt(0);
+
+			overridefilesize = Boolean.valueOf(prop.getProperty("overridefilesize"));
+			isaieafoldername = prop.getProperty("isaieafoldername");
+			stsefoldername	 = prop.getProperty("stsefoldername");
+			gsgefoldername   = prop.getProperty("gsgefoldername");
+			parentfoldername = prop.getProperty("parentfoldername");
+
 		} 
 		catch (IOException ex) {
 			ex.printStackTrace();

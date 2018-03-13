@@ -1,5 +1,8 @@
 package org.null0.edi.debatcher;
 
+import java.io.IOException;
+import java.util.Properties;
+
 public class FileProperties {
 	private char dataElementSeparator;
 	private char dataRepetitionSeparator;
@@ -11,6 +14,27 @@ public class FileProperties {
 	private String stsefoldername;
 	private String gsgefoldername;
 	private String parentfoldername;
+
+	/** 
+	 * 
+	 * 
+	 * TODO This class does not appear to be used, except in a unit test. 
+	 * Need to come up with a cleaner solution.
+	*/
+	public FileProperties() {
+		try {
+			Properties prop = new Properties();
+			prop.load(FileProperties.class.getClassLoader().getResourceAsStream("edi-parameters.properties"));	
+			
+			dataElementSeparator = prop.getProperty("dataElementSeparator").charAt(0);
+			dataRepetitionSeparator =  prop.getProperty("dataRepetitionSeparator").charAt(0);
+			componentElementSeparator = prop.getProperty("componentElementSeparator").charAt(0);
+			segmentTerminator = prop.getProperty("segmentTerminator").charAt(0);
+		} 
+		catch (IOException ex) {
+			ex.printStackTrace();
+		}
+	}
 
 	public char getDataElementSeparator() {
 		return dataElementSeparator;

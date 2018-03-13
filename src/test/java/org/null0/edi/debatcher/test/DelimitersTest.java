@@ -26,13 +26,8 @@ public class DelimitersTest {
 
 	}
 
-	@Ignore
 	@Test
 	public void testDelimiters() {
-		delimiters.getComponentElementSeparator();
-		delimiters.getDataElementSeparator();
-		delimiters.getDataRepetitionSeparator();
-		delimiters.getSegmentTerminator();
 		assertEquals(delimiters.getComponentElementSeparator(), ':');
 		assertEquals(delimiters.getDataElementSeparator(), '*');
 		assertEquals(delimiters.getDataRepetitionSeparator(), '^');

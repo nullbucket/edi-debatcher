@@ -1,12 +1,15 @@
 package org.null0.edi.debatcher;
-
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.null0.edi.debatcher.EncounterEdiValidator.ERROR;
 
 // TODO: This was migrated from something too complex; simplify
 public class DebatcherException extends Exception {
+	private static final long serialVersionUID = 1L;
+	private String errorCode;
+	private long idBatch;
+	private ERROR errorType;
+	private ERROR_LEVEL errorLevel;
+	private String ediFileName;
+	private ERROR_OR_EXCEPTION errorOrException;
 
 	public static enum ERROR_OR_EXCEPTION {
 		Exception
@@ -16,18 +19,42 @@ public class DebatcherException extends Exception {
 		Batch, Encounter
 	};
 
-	/**
-	 *
-	 */
-	private static final long serialVersionUID = 1L;
-	private Collection<String> messages;
-	protected static String defaultResourceConfig;
-	private String errorCode;
-	private long idBatch;
-	private ERROR errorType;
-	private ERROR_LEVEL errorLevel;
-	private String ediFileName;
-	private ERROR_OR_EXCEPTION errorOrException;
+	public DebatcherException() {
+		super();
+	}
+
+	public DebatcherException(Throwable e) {
+		super(e);
+	}
+
+	public DebatcherException(String msg, String errorCode) {
+		super(msg);
+		this.errorCode = errorCode;
+	}
+
+	public DebatcherException(String msg, String errorCode, long idBatch, ERROR errorType, ERROR_LEVEL errorLevel) {
+		super(msg);
+		this.errorCode = errorCode;
+		this.idBatch = idBatch;
+		this.errorType = errorType;
+		this.errorLevel = errorLevel;
+	}
+
+	public DebatcherException(String msg, long idBatch, String ediFileName, ERROR_OR_EXCEPTION errorOrException) {
+		super(msg);
+		this.idBatch = idBatch;
+		this.ediFileName = ediFileName;
+		this.errorOrException = errorOrException;
+	}
+
+	public DebatcherException(String msg, String errorCode, ERROR errorType, ERROR_LEVEL errorLevel, long idBatch, ERROR_OR_EXCEPTION errorOrException) {
+		super(msg);
+		this.errorCode = errorCode;
+		this.errorType = errorType;
+		this.errorLevel = errorLevel;
+		this.idBatch = idBatch;
+		this.errorOrException = errorOrException;
+	}
 
 	public ERROR_OR_EXCEPTION getErrorOrException() {
 		return errorOrException;
@@ -75,78 +102,6 @@ public class DebatcherException extends Exception {
 
 	public void setErrorCode(String errorCode) {
 		this.errorCode = errorCode;
-	}
-
-	public DebatcherException() {
-		super();
-	}
-
-	public DebatcherException(Throwable e) {
-		super(e);
-	}
-
-	public DebatcherException(String msg, String errorCode) {
-		super(msg);
-		this.errorCode = errorCode;
-	}
-
-	public DebatcherException(String msg, String errorCode, long idBatch, ERROR errorType, ERROR_LEVEL errorLevel) {
-		super(msg);
-		this.errorCode = errorCode;
-		this.idBatch = idBatch;
-		this.errorType = errorType;
-		this.errorLevel = errorLevel;
-	}
-
-	public DebatcherException(String msg, long idBatch, String ediFileName, ERROR_OR_EXCEPTION errorOrException) {
-		super(msg);
-		this.idBatch = idBatch;
-		this.ediFileName = ediFileName;
-		this.errorOrException = errorOrException;
-	}
-
-	public DebatcherException(String msg, String errorCode, ERROR errorType, ERROR_LEVEL errorLevel) {
-		super(msg);
-		this.errorCode = errorCode;
-		this.errorType = errorType;
-		this.errorLevel = errorLevel;
-	}
-
-	public DebatcherException(String msg, String errorCode, ERROR errorType, ERROR_LEVEL errorLevel, long idBatch,
-			ERROR_OR_EXCEPTION errorOrException) {
-		super(msg);
-		this.errorCode = errorCode;
-		this.errorType = errorType;
-		this.errorLevel = errorLevel;
-		this.idBatch = idBatch;
-		this.errorOrException = errorOrException;
-
-	}
-
-	public DebatcherException(String msg) {
-		super(msg);
-	}
-
-	public DebatcherException(Collection<String> messages) {
-		this.messages = messages;
-	}
-
-	public Collection<String> getMessages() {
-		return messages;
-	}
-
-	public void addMessages(Collection<String> msgs) {
-		if (messages != null)
-			messages.addAll(msgs);
-		else
-			messages = new ArrayList<String>(msgs);
-	}
-
-	public void addMessages(DebatcherException e) {
-		if (messages == null)
-			messages = new ArrayList<String>();
-		if (e != null)
-			messages.addAll(e.messages);
 	}
 
 	public static String getStackTraceFromException(Throwable e) {

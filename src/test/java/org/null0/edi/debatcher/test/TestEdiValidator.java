@@ -15,14 +15,13 @@ import org.null0.edi.debatcher.MetadataLoggerDefault;
 
 public class TestEdiValidator {
 	
-	private String outputLocation = "/home/developer/lnxshare/output/";
+	private String outputLocation = "/home/developer/lnxshare/output/"; // TODO: THIS IS BAD!!!
 	static String DateFormatForFileNames = "yyyyMMdd-HHmmss-SSS";
 
 	@org.junit.Before
 	public void setup() throws Exception {
-		String outputBase = Config.getSharedBaseDirPath();
-		if (outputBase != null) {
-			outputLocation = outputBase + "output/";
+		if (outputLocation != null) { 
+			outputLocation = Config.getOutputDir().toString(); // TODO: replace with something else
 		}
 	}
 

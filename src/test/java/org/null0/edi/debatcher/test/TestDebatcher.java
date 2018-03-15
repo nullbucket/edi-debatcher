@@ -5,7 +5,7 @@ import java.io.InputStream;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.null0.edi.debatcher.Config;
 // import org.null0.metadata.services.DeBatchedDataLogger;
 import org.null0.edi.debatcher.MetadataLogger;
 
@@ -17,8 +17,8 @@ public class TestDebatcher {
 	// private MetadataLogger metadataLogger = new DeBatchedDataLogger(); // TODO: metadata logger implementation class 
 
 	@Before
-	public void setUp() {
-		String baseDir =  org.null0.edi.debatcher.Config.getSharedBaseDirPath();
+	public void setUp() throws Exception {
+		String baseDir = Config.getOutputDir().toString();
 		if (baseDir != null) {
 			DIRECTORY = baseDir;
 		}

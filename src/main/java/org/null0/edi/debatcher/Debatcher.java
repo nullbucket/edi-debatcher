@@ -92,8 +92,8 @@ public class Debatcher {
 		this.ediValidator = ediValidator;
 	}
 
-	private void setOutputLocation() {
-		String baseDir = Config.getSharedBaseDirPath();
+	private void setOutputLocation() throws Exception {
+		String baseDir = Config.getOutputDir().toString();
 		if (baseDir != null) {
 			outputLocation = baseDir + "output/";
 		}

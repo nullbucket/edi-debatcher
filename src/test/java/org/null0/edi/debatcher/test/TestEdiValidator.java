@@ -14,15 +14,12 @@ import org.null0.edi.debatcher.EncounterEdiValidatorDefault;
 import org.null0.edi.debatcher.MetadataLoggerDefault;
 
 public class TestEdiValidator {
-	
-	private String outputLocation = "/home/developer/lnxshare/output/"; // TODO: THIS IS BAD!!!
 	static String DateFormatForFileNames = "yyyyMMdd-HHmmss-SSS";
+	private String directory;
 
 	@org.junit.Before
 	public void setup() throws Exception {
-		if (outputLocation != null) { 
-			outputLocation = Config.getOutputDir().toString(); // TODO: replace with something else
-		}
+		directory = new Config().getOutputDir().toString();
 	}
 
 	@Ignore
@@ -202,7 +199,7 @@ public class TestEdiValidator {
 		long batchId = 0;
 		try {
 			EncounterEdiValidator ediValidator = new EncounterEdiValidatorDefault(true);
-			new Debatcher(new MetadataLoggerDefault(), ediValidator).debatch(file, batchId, getIs(file), outputLocation, false);
+			new Debatcher(new MetadataLoggerDefault(), ediValidator).debatch(file, batchId, getIs(file), directory, false);
 			fail("Expecting error " + errorCode);
 		} catch (DebatcherException e) {
 			assertEquals(errorCode, e.getErrorCode());

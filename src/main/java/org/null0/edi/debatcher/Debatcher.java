@@ -92,22 +92,12 @@ public class Debatcher {
 		this.ediValidator = ediValidator;
 	}
 
-	private void setOutputLocation() throws Exception {
-		String baseDir = Config.getOutputDir().toString();
-		if (baseDir != null) {
-			outputLocation = baseDir + "output/";
-		}
-	}
-
 	public void debatch(String transactionId, InputStream is) throws Exception {
 		logger.info("debatching started..." + transactionId);
 		this.transactionId = transactionId;
 		this.inputStream = is;
-
-		setOutputLocation();
-
-		batchIdMetadata = metadataLogger.logBatchSubmissionData(transactionId); // Logging the batch submission data to
-																				// the metadata store
+		this.outputLocation = (new Config()).getOutputDir().toString();		
+		this.batchIdMetadata = metadataLogger.logBatchSubmissionData(transactionId);
 
 		readInterchangeControls();
 		is.close();

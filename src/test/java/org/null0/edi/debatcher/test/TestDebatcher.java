@@ -11,18 +11,12 @@ import org.null0.edi.debatcher.MetadataLogger;
 
 public class TestDebatcher {
 	private static final Logger logger = LoggerFactory.getLogger(TestDebatcher.class);
-	
-	// TODO: get rid of hard-coding
-	public static String DIRECTORY = "/home/developer/lnxshare/";
+	private String directory;
 	// private MetadataLogger metadataLogger = new DeBatchedDataLogger(); // TODO: metadata logger implementation class 
 
 	@Before
 	public void setUp() throws Exception {
-		String baseDir = Config.getOutputDir().toString();
-		if (baseDir != null) {
-			DIRECTORY = baseDir;
-		}
-
+		directory = new Config().getOutputDir().toString();
 		/*
 		 * logger.info("deleting the old messages from the output folder..."); File dir
 		 * = new File(DIRECTORY+"/output"); for(File file: dir.listFiles())

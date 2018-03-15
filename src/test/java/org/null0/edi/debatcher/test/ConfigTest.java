@@ -2,14 +2,11 @@ package org.null0.edi.debatcher.test;
 
 import static org.junit.Assert.*;
 
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.null0.edi.debatcher.Config;
 

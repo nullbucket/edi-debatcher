@@ -3,7 +3,7 @@
 
 :+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
 
-The following is a set of guidelines for this project, which are hosted in the [Null Bucket organuzation (null0)](https://github.com/nullbucket) on GitHub. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
+The following is a set of guidelines for this project, which are hosted in the [nullbucket organization (null0)](https://github.com/nullbucket) on GitHub. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
 
 ### Your First Code Contribution
 
@@ -13,8 +13,6 @@ Unsure where to begin contributing? You can start by looking through these `begi
 * [Help wanted issues][help-wanted] - issues which should be a bit more involved than `beginner` issues.
 
 We have yest tried accepting forks but are open to it.
-
-#### Local development
 
 ### Pull Requests (We took some of this from Atom's GitHub as an example)
 
@@ -32,21 +30,21 @@ Right now main contributers are within the project, using branches. We do prefer
 This is an example of a simple session:
 
 1. Do your work on a local branch in Git like this:
-git checkout -b mybranch
-git status
-git add -A
-git status
-git commit -m "comment w/github ref like #9"
-git push -u origin mybranch
+   * git checkout -b mybranch
+   * git status
+   * git add -A
+   * git status
+   * git commit -m "comment w/github ref like #9"
+   * git push -u origin mybranch
 
 2. Submit a pull request for your branch in GitHub
 
 3. The reviewer will merge your changes and probably delete your branch right away.
 
 4. After that happens, switch your local back to master and delete your branch:
-git checkout master
-git pull --rebase
-git branch -d mybranch
+   * git checkout master
+   * git pull --rebase
+   * git branch -d mybranch
 
 ## Styleguides
 

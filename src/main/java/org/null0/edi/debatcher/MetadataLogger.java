@@ -11,8 +11,7 @@ public interface MetadataLogger {
 
 	void updateBatchSubmissionData(long batchIdMetadata, int isaCnt);
 
-	long logEncounter(long batchIdMetadata, long hlIdMetadata, String clm01, String clm05, int lxCnt, Object object,
-			String splitEncounterName);
+	long logEncounter(long batchIdMetadata, long hlIdMetadata, String clm01, String clm05, int lxCnt, Object object, String splitEncounterName);
 
 	long logGsData(long isaIdMetadata, String gs06, String gsSegment);
 

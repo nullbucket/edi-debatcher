@@ -9,6 +9,10 @@ import org.null0.edi.debatcher.Config;
 // import org.null0.metadata.services.DeBatchedDataLogger;
 import org.null0.edi.debatcher.MetadataLogger;
 
+// TODO: This is scary. All the useful tests have been commented out! Why?
+// First we'll get the other unit tests to pass (and verify their accuracy)
+// then we'll start enabling and verify these unit tests.
+//
 public class TestDebatcher {
 	private static final Logger logger = LoggerFactory.getLogger(TestDebatcher.class);
 	private String directory;

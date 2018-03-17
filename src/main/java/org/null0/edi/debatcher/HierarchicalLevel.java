@@ -1,6 +1,6 @@
 package org.null0.edi.debatcher;
 
-public class HierarchicalLevel {
+class HierarchicalLevel {
 
 	private int id;
 	private int parentId;

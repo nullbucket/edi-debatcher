@@ -18,15 +18,16 @@ import org.slf4j.LoggerFactory;
  * 
  *
  */
+// TODO: define an interface for Config so that for unit testing we can use it instead without any file I/O dependencies
 public class Config {
 	/** If this environment variable exists it must contain full valid path to properties file */
-	public static final String ENVAR_NAME = "edi_debatch_config_file";
+	private static final String ENVAR_NAME = "edi_debatch_config_file";
 	
 	/** Default expected local properties file name if config_env_name environment variable does not exist */
-	public static final String FILE_NAME = "debatcher.properties";
+	private static final String FILE_NAME = "debatcher.properties";
 	
 	/** Expected name for output directory variable in java properties file */
-	public static final String OUTDIR_PROP_NAME = "outputDirectory";
+	private static final String OUTDIR_PROP_NAME = "outputDirectory";
 	
 	private static final Logger LOG = LoggerFactory.getLogger(Config.class); // Logger
 	private Properties properties;
@@ -64,7 +65,7 @@ public class Config {
 		}
 		
 		// If for any reason we couldn't fetch a configuration file, use defaults
-		if(!ok) {
+		if (!ok) {
 			setToFailover();
 		}
 	}
@@ -124,6 +125,4 @@ public class Config {
 		}
 		return p;
 	}
-	
-
 }

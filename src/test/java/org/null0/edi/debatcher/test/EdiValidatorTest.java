@@ -13,7 +13,7 @@ import org.null0.edi.debatcher.EncounterEdiValidator;
 import org.null0.edi.debatcher.EncounterEdiValidatorDefault;
 import org.null0.edi.debatcher.MetadataLoggerDefault;
 
-public class TestEdiValidator {
+public class EdiValidatorTest {
 	static String DateFormatForFileNames = "yyyyMMdd-HHmmss-SSS";
 	private String directory;
 

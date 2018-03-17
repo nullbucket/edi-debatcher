@@ -13,8 +13,8 @@ import org.null0.edi.debatcher.MetadataLogger;
 // First we'll get the other unit tests to pass (and verify their accuracy)
 // then we'll start enabling and verify these unit tests.
 //
-public class TestDebatcher {
-	private static final Logger logger = LoggerFactory.getLogger(TestDebatcher.class);
+public class DebatcherTest {
+	private static final Logger logger = LoggerFactory.getLogger(DebatcherTest.class);
 	private String directory;
 	// private MetadataLogger metadataLogger = new DeBatchedDataLogger(); // TODO: metadata logger implementation class 
 

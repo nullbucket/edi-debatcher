@@ -20,7 +20,7 @@ import org.null0.edi.debatcher.DebatcherException.ERROR_OR_EXCEPTION;
 import org.null0.edi.debatcher.Delimiters.EdiWrapStyle;
 import org.null0.edi.debatcher.EncounterEdiValidator.CLAIM_TYPE;
 import org.null0.edi.debatcher.EncounterEdiValidator.ERROR;
-import org.null0.edi.debatcher.EncounterEdiValidator.X12_837_ELEMENT;
+import org.null0.edi.debatcher.EncounterEdiValidator.X12_ELEMENT;
 import org.null0.edi.debatcher.MetadataLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +128,7 @@ public class Debatcher {
 						DebatcherException.ERROR_OR_EXCEPTION.Exception);
 			}
 			isaSegment = segment.replaceAll("\\r|\\n", "");
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.DATA_SEPARATOR, fieldDlm, null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.DATA_SEPARATOR, fieldDlm, null);
 			isa13 = readField(segment, 13);
 			isaCnt++;
 
@@ -138,16 +138,16 @@ public class Debatcher {
 				transactionId = isa06.trim() + transactionId;
 				transactionIdUpdate = false;
 			}
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ISA06, isa06, null);
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ISA07, readField(segment, 7), null);
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ISA08, readField(segment, 8), null);
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ISA11, readField(segment, 11), null);
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ISA12, readField(segment, 12), null);
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ISA13, isa13, null);
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ISA14, readField(segment, 14), null);
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ISA15, readField(segment, 15), null);
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ISA16, readField(segment, 16), null);
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ISAEnd, segmentDlm, null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA06, isa06, null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA07, readField(segment, 7), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA08, readField(segment, 8), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA11, readField(segment, 11), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA12, readField(segment, 12), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA13, isa13, null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA14, readField(segment, 14), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA15, readField(segment, 15), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA16, readField(segment, 16), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISAEnd, segmentDlm, null);
 
 			gsCnt = 0;
 
@@ -157,10 +157,10 @@ public class Debatcher {
 
 			if (!"IEA".equals(readField(segment, 0))) {
 				// throw new Exception("Missing IEA segment");
-				ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.IEA01, null, null);
+				ediValidator.validate(batchIdMetadata, X12_ELEMENT.IEA01, null, null);
 			}
 
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.IEA01, readField(segment, 1), String.valueOf(gsCnt));
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.IEA01, readField(segment, 1), String.valueOf(gsCnt));
 
 			String iea02 = readField(segment, 2);
 			if (!isa13.equals(iea02)) {
@@ -184,7 +184,7 @@ public class Debatcher {
 
 			if (!readGsSegment) {
 				if (!"GS".equals(readField(segment, 0))) {
-					ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.GS, null, null);
+					ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS, null, null);
 				}
 				readGsSegment = true;
 			}
@@ -200,23 +200,23 @@ public class Debatcher {
 
 			gsIdMetadata = metadataLogger.logGsData(isaIdMetadata, gs06, gsSegment);
 
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.GS01, readField(gsSegment, 1), null);
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.GS08, readField(gsSegment, 8), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS01, readField(gsSegment, 1), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS08, readField(gsSegment, 8), null);
 
 			stCnt = 0;
 			getNextSegment();
 			readTransactionSets();
 			if (!"GE".equals(readField(segment, 0))) {
 				// throw new Exception("Missing GE segment");
-				ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.GE, null, null);
+				ediValidator.validate(batchIdMetadata, X12_ELEMENT.GE, null, null);
 			}
 			String ge02 = readField(segment, 2);
 			if (!gs06.equals(ge02)) {
 				logger.error("GS06 {} & GE02 {} don't match", gs06, ge02);
 				// throw new Exception("GS06 & GE02 don't match");
-				ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.GS06, gs06, ge02);
+				ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS06, gs06, ge02);
 			}
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.GE01, readField(segment, 1), String.valueOf(stCnt));
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GE01, readField(segment, 1), String.valueOf(stCnt));
 
 			metadataLogger.updateGsData(gsIdMetadata, stCnt);
 		}
@@ -240,11 +240,11 @@ public class Debatcher {
 
 			String st01 = readField(segment, 1);
 
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ST01, st01, null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ST01, st01, null);
 
 			st02 = readField(segment, 2);
 			claimType = getClaimType(segment);
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ST03, readField(segment, 3), claimType.name());
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ST03, readField(segment, 3), claimType.name());
 
 			hlCnt = 0;
 			stIdMetadata = metadataLogger.logStData(gsIdMetadata, st02, segment.trim());
@@ -260,17 +260,17 @@ public class Debatcher {
 			}
 
 			if (isIeaFound || readField(segment, 0).equals("SE")) {
-				ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.SE, readField(segment, 0), null);
-				ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.SE01, readField(segment, 1), String.valueOf(segmentCnt));
+				ediValidator.validate(batchIdMetadata, X12_ELEMENT.SE, readField(segment, 0), null);
+				ediValidator.validate(batchIdMetadata, X12_ELEMENT.SE01, readField(segment, 1), String.valueOf(segmentCnt));
 			} else { // If the SE segment is missing but the IEA segment is also missing, then treat as missing IEA.
-				ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.IEA01, null, null);
+				ediValidator.validate(batchIdMetadata, X12_ELEMENT.IEA01, null, null);
 			}
 
 			String se02 = readField(segment, 2);
 			if (!st02.equals(se02)) {
 				logger.error("ST02 {} & SE02 {} don't match", st02, se02);
 				// throw new Exception ("ST02 & SE02 don't match");
-				ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.ST02, st02, se02);
+				ediValidator.validate(batchIdMetadata, X12_ELEMENT.ST02, st02, se02);
 			}
 
 			metadataLogger.updateStData(stIdMetadata, hlCnt);
@@ -352,7 +352,7 @@ public class Debatcher {
 			// ERROR_LEVEL.Batch, batchIdMetadata, ERROR_OR_EXCEPTION.Exception);
 			ediValidator.logError(batchIdMetadata, EncounterEdiValidatorDefault.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999, "Missing CLM segment");
 		} else {
-			ediValidator.validate(batchIdMetadata, X12_837_ELEMENT.IEA01, null, null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.IEA01, null, null);
 		}
 	}
 

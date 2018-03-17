@@ -7,8 +7,7 @@ import java.util.Map;
 //import org.null0.edi.debatcher.validation.EncounterEdiValidator.ERROR;
 
 public interface EncounterEdiValidator {
-
-	static enum X12_837_ELEMENT {
+	static enum X12_ELEMENT {
 		ISA06, ISA07, ISA08, ISA11, ISA12, ISA13, ISA14, ISA15, ISA16, IEA01, IEA02, ISAEnd, DATA_SEPARATOR, GS, GS01, GS06, GS08, GE, GE01, ST01, ST02, ST03, SE, SE01
 	};
 
@@ -41,34 +40,36 @@ public interface EncounterEdiValidator {
 	static final String AK9_999_ERROR_GS08 = "AK905-2";
 	static final String AK9_999_ERROR_GE01 = "AK905-5";
 	static final String AK9_999_ERROR_GE_MISSING = "AK905-3";
+	
+	static final String[] validISA12 = { "00501" };  // TODO: specific to 837 claims; decouple
+	static final String[] validISA15 = { "P", "T" }; // TODO: specific to 837 claims; decouple
+	
+	// TODO: all these below were hard-coded AND this is NOT the proper way to validate!
+	// According to EDI standards, the valid values below are defined by fields
+	// from the special fixed-sized ISA01 segment.
 	static final String[] validISA11 = { ":", "^" };
-	static final String[] validISA12 = { "00501" };
-	static final String[] validISA15 = { "P", "T" };
 	static final String[] validISAEnd = { "~" }; // { ":", "~", "\n" };
 	static final String[] validDataElementSeparator = { "*" };
 	static final String[] validComponentSeparator = { ":", ">" };
+	
+	// TODO: these below are specific to 837 claims; decouple
 	static final String[] validSt03ForP = { "005010X222A1", "005010X222A2" };
 	static final String[] validSt03ForI = { "005010X223A2", "005010X223A3" };
-
 	static enum CLAIM_TYPE {
 		PRO, INS, OTH
 	};
 
-	static final String BRE_ERROR = "BRE-ERROR";
-
-	public boolean validate(long batchId, X12_837_ELEMENT elementName, String data, String compareWithData)
-			throws Exception;
-
+	public boolean validate(long batchId, X12_ELEMENT elementName, String data, String compareWithData) throws Exception;
 	public void logError(long batchId, String errorCode, ERROR errorType, String errorMessage) throws Exception;
 
 	public enum ERROR {
 		TYPE_TA1("TA1"), TYPE_999("999"), TYPE_BRE("BRE");
-
 		private static final Map<String, ERROR> stringToEnum = new HashMap<String, ERROR>();
 
 		static {
-			for (ERROR code : values())
+			for (ERROR code : values()) {
 				stringToEnum.put(code.getCode(), code);
+			}
 		}
 
 		public static ERROR fromLegacyCode(String code) {
@@ -76,15 +77,11 @@ public interface EncounterEdiValidator {
 		}
 
 		private final String code;
-
 		ERROR(String code) {
 			this.code = code;
 		}
-
 		public String getCode() {
 			return code;
 		}
-
 	}
-
 }

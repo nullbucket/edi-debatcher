@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EncounterEdiValidatorDefault implements EncounterEdiValidator {
-
 	private static final Logger logger = LoggerFactory.getLogger(EncounterEdiValidatorDefault.class);
 	private boolean rejectOnValidationError;
 	private static final boolean stopAtFirstValidationFailure = true;
@@ -18,9 +17,7 @@ public class EncounterEdiValidatorDefault implements EncounterEdiValidator {
 		this.rejectOnValidationError = rejectOnValidationError;
 	}
 
-	public boolean validate(long batchId, X12_837_ELEMENT elementName, String data, String compareWithData)
-			throws Exception {
-
+	public boolean validate(long batchId, X12_ELEMENT elementName, String data, String compareWithData) throws Exception {
 		logger.debug("Validating {} for data {} and compareWithData {}", elementName, data, compareWithData);
 
 		switch (elementName) {
@@ -183,7 +180,7 @@ public class EncounterEdiValidatorDefault implements EncounterEdiValidator {
 	}
 
 	/*
-	 * public boolean validate(long batchId, X12_837_ELEMENT elementName, String
+	 * public boolean validate(long batchId, X12_ELEMENT elementName, String
 	 * data, String compareWithData) throws Exception {
 	 * 
 	 * switch (elementName) { case IEA01: if(!equals(data, compareWithData)) {
@@ -208,7 +205,7 @@ public class EncounterEdiValidatorDefault implements EncounterEdiValidator {
 
 	}
 
-	public boolean isValidSenderId(String senderId, long batchId) throws Exception {
+	private boolean isValidSenderId(String senderId, long batchId) throws Exception {
 		// TODO: replace this if it makes sense
 		/*
 		 * MetadataServicesImpl services = new MetadataServicesImpl();
@@ -219,29 +216,16 @@ public class EncounterEdiValidatorDefault implements EncounterEdiValidator {
 		return true;
 	}
 
-	public boolean isEmpty(String data) {
-		if (data == null || data.trim().length() == 0) {
-			return true;
-		}
-		return false;
+	private boolean isEmpty(String data) {
+		return data == null || data.trim().length() == 0;
 	}
 
-	public boolean equals(String str1, String str2) {
-		if (str1 == null || str2 == null) {
-			return false;
-		}
-		if (!str1.trim().equals(str2.trim())) {
-			return false;
-		}
-		return true;
+	private boolean equals(String str1, String str2) {
+		return str1 != null && str2 != null && str1.trim().equals(str2.trim());
 	}
 
-	public boolean isNumeric(String s) {
-
-		if (s == null)
-			return false;
-
-		return s.matches("\\d+");
+	private boolean isNumeric(String s) {
+		return s == null ? false : s.matches("\\d+");
 	}
 
 }

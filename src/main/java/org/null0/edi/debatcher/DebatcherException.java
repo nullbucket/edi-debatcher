@@ -108,7 +108,7 @@ public class DebatcherException extends Exception {
 		return getStackTraceFromException(e, null);
 	}
 
-	public static String getStackTraceFromException(Throwable e, StringBuffer buf) {
+	private static String getStackTraceFromException(Throwable e, StringBuffer buf) {
 		String stackTrace = null;
 
 		if (e != null) {
@@ -130,9 +130,9 @@ public class DebatcherException extends Exception {
 				}
 			}
 
-			if (e.getCause() != null)
+			if (e.getCause() != null) {
 				getStackTraceFromException(e.getCause(), buf);
-
+			}
 			stackTrace = new String(buf);
 		}
 
@@ -141,15 +141,13 @@ public class DebatcherException extends Exception {
 
 	public static Throwable getLowestLevelCause(Throwable e) {
 		Throwable result = null;
-
-		// null will be returned unless there ia a cause
+		// null will be returned unless there is a cause
 		if (e != null && e.getCause() != null) {
 			result = e;
-
-			while (result.getCause() != null)
+			while (result.getCause() != null) {
 				result = result.getCause();
+			}
 		}
-
 		return result;
 	}
 }

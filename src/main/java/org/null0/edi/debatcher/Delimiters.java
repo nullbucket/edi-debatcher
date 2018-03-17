@@ -1,12 +1,12 @@
 package org.null0.edi.debatcher;
 
-public class Delimiters {
+class Delimiters {
 	private char dataElementSeparator;
 	private char segmentTerminator;
 	private EdiWrapStyle ediWrap;
 	private String osNewLine;
 	
-	public enum EdiWrapStyle {
+	enum EdiWrapStyle {
 		Unknown, Unwrapped, Unix, Windows
 	};
 

@@ -182,7 +182,7 @@ public class DebatcherTest {
 
 	private InputStream getIs(String fileName) throws Exception {
 		// return Files.newInputStream(Paths.get(DIRECTORY, fileName+".txt"));
-		return getClass().getClassLoader().getResourceAsStream("files/" + fileName + ".txt");
+		return Thread.currentThread().getContextClassLoader().getResourceAsStream("files/" + fileName + ".txt");
 	}
 
 }

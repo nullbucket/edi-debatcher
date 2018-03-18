@@ -1,5 +1,5 @@
 package org.null0.edi.debatcher;
-import org.null0.edi.debatcher.EncounterEdiValidator.ERROR;
+import org.null0.edi.debatcher.EdiValidator.ERROR;
 
 // TODO: This was migrated from something too complex; simplify
 public class DebatcherException extends Exception {

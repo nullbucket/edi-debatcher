@@ -7,13 +7,14 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EncounterEdiValidatorDefault implements EncounterEdiValidator {
-	private static final Logger logger = LoggerFactory.getLogger(EncounterEdiValidatorDefault.class);
+// TODO: the stuff specific to claims (837) needs to be moved to a separate implementation
+public class EdiValidatorDefault implements EdiValidator {
+	private static final Logger logger = LoggerFactory.getLogger(EdiValidatorDefault.class);
 	private boolean rejectOnValidationError;
 	private static final boolean stopAtFirstValidationFailure = true;
 	private List<String> isa13List = new ArrayList<String>();
 
-	public EncounterEdiValidatorDefault(boolean rejectOnValidationError) {
+	public EdiValidatorDefault(boolean rejectOnValidationError) {
 		this.rejectOnValidationError = rejectOnValidationError;
 	}
 
@@ -191,18 +192,19 @@ public class EncounterEdiValidatorDefault implements EncounterEdiValidator {
 	 */
 
 	public void logError(long batchId, String errorCode, ERROR errorType, String errorMessage) throws Exception {
-
-		if (rejectOnValidationError) {
-
-			// new MetadataServicesImpl().insertValidationError(batchId, errorCode,
-			// errorType);
-
-			if (stopAtFirstValidationFailure) {
-				throw new DebatcherException(errorMessage, errorCode, errorType, DebatcherException.ERROR_LEVEL.Batch,
-						batchId, DebatcherException.ERROR_OR_EXCEPTION.Exception);
-			}
+		// TODO: enable metadata logging but reuse same instance
+		// new MetadataServicesImpl().insertValidationError(batchId, errorCode, errorType);
+		
+		if (logger.isInfoEnabled()) {
+			logger.info("batchId:{}, errorCode:{}, errorType:{}, errorMessage:{}", batchId, errorCode, errorType, errorMessage);
 		}
-
+		
+		if (!rejectOnValidationError) {
+			return;
+		}
+		if (stopAtFirstValidationFailure) {
+			throw new DebatcherException(errorMessage, errorCode, errorType, DebatcherException.ERROR_LEVEL.Batch, batchId, DebatcherException.ERROR_OR_EXCEPTION.Exception);
+		}
 	}
 
 	private boolean isValidSenderId(String senderId, long batchId) throws Exception {
@@ -227,5 +229,4 @@ public class EncounterEdiValidatorDefault implements EncounterEdiValidator {
 	private boolean isNumeric(String s) {
 		return s == null ? false : s.matches("\\d+");
 	}
-
 }

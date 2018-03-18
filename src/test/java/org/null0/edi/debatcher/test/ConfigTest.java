@@ -18,30 +18,35 @@ public class ConfigTest {
 		try {
 			Config config = new Config();
 			config.setOutputDir(dir);
-			assertEquals(Config.ConfigurationMode.OVERRIDE, config.getMode());
+			assertEquals(Config.ConfigurationSource.OVERRIDE, config.getConfigurationSource());
 		} catch (NotDirectoryException e) {
 			fail("NotDirectoryException");
 		}		
 	}
 
 	@Test
+	public void testGetBufferSize_Failover() {
+		assertEquals(1024, new Config().getBufferSize());
+	}	
+	
+	@Test
 	public void testGetOutputDir_Failover() {
 		Config config = testOutputDir();		
-		assertEquals(Config.ConfigurationMode.FAILOVER, config.getMode());
+		assertEquals(Config.ConfigurationSource.FAILOVER, config.getConfigurationSource());
 	}	
 
 	@Test
 	public void testGetOutputDir_PropertiesFile() {
 		// TODO: we need to set up the local file "debatcher.properties" for this to pass
 		Config config = testOutputDir();		
-		assertEquals(Config.ConfigurationMode.PROPERTIES, config.getMode());
+		assertEquals(Config.ConfigurationSource.PROPERTIES, config.getConfigurationSource());
 	}	
 
 	@Test
 	public void testGetOutputDir_EnvironmentVariable() {
 		// TODO: we need to set up the a "debatcher.properties" files in a subdirectory and point an environment variable to it for this to pass
 		Config config =testOutputDir();		
-		assertEquals(Config.ConfigurationMode.ENVIRONMENT_VARIABLE, config.getMode());
+		assertEquals(Config.ConfigurationSource.ENVIRONMENT_VARIABLE, config.getConfigurationSource());
 	}
 	
 	private Config testOutputDir() {
@@ -50,5 +55,4 @@ public class ConfigTest {
 		assertTrue(Files.exists(path));
 		return config;
 	}
-
 }

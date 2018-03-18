@@ -31,14 +31,16 @@ public class Config {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(Config.class); // Logger
 	private Properties properties;
-	private Path outDir;
-	private ConfigurationMode mode;
+	private ConfigurationSource mode;
 
-	public Config() {
-		
+	// Configuration state
+	private Path outDir;
+	private int bufferSize;
+
+	public Config() {		
 		// Determine path to configuration file.
 		// First try to use environment variable override
-		this.mode = ConfigurationMode.ENVIRONMENT_VARIABLE;
+		this.mode = ConfigurationSource.ENVIRONMENT_VARIABLE;
 		String path = System.getenv(ENVAR_NAME);
 		
 		boolean ok = true;
@@ -50,7 +52,7 @@ public class Config {
 					path += "//";
 				}
 				path += FILE_NAME;
-				this.mode = ConfigurationMode.PROPERTIES;
+				this.mode = ConfigurationSource.PROPERTIES;
 			}
 			
 			// Initialize properties from path
@@ -70,34 +72,17 @@ public class Config {
 		}
 	}
 	
-	public void setOutputDir(String path) throws NotDirectoryException {
-		this.outDir = toPath(path);
-		this.mode = ConfigurationMode.OVERRIDE;
-	}
-
-	public Path getOutputDir()  {
-		if (this.outDir == null ) {
-			String dirName = null;
-			try {
-				dirName = this.properties.getProperty(Config.OUTDIR_PROP_NAME);
-				this.outDir = toPath(dirName);
-			} catch (NotDirectoryException e) {
-				LOG.warn("Bad output directory name '{}'", dirName);
-				setToFailover();
-			}
-		}
-		return this.outDir;
-	}
-
-	public enum ConfigurationMode { ENVIRONMENT_VARIABLE, PROPERTIES, OVERRIDE, FAILOVER } 
-	public ConfigurationMode getMode() {
+	public enum ConfigurationSource { ENVIRONMENT_VARIABLE, PROPERTIES, OVERRIDE, FAILOVER } 
+	public ConfigurationSource getConfigurationSource() {
 		return this.mode;		
 	}
 	
 	private void setToFailover() {
+		final int DEFAULT_BUFFER_SIZE = 1024;
 		try {
 			this.outDir = toPath(getLocalDir());
-			this.mode = ConfigurationMode.FAILOVER;
+			this.bufferSize = DEFAULT_BUFFER_SIZE;
+			this.mode = ConfigurationSource.FAILOVER;
 		} catch (NotDirectoryException e) {
 			LOG.error("Unable to determine java resource path", e); // This should never happen
 		} 
@@ -105,10 +90,9 @@ public class Config {
 	}
 	
 	private String getLocalDir() {
-		ClassLoader classloader = Thread.currentThread().getContextClassLoader();
 		String path = "";
 		try {
-			path = Paths.get(classloader.getResource("").toURI()).toString();
+			path = Paths.get(Thread.currentThread().getContextClassLoader().getResource("").toURI()).toString();
 		} catch (URISyntaxException e) {
 			LOG.error("Unable to determine java resource path", e); // This should never happen
 		}
@@ -124,5 +108,44 @@ public class Config {
 			throw new NotDirectoryException(path);
 		}
 		return p;
+	}
+
+	/**
+	 * @return output directory
+	 */
+	public void setOutputDir(String path) throws NotDirectoryException {
+		this.outDir = toPath(path);
+		this.mode = ConfigurationSource.OVERRIDE;
+	}
+
+	/**
+	 * @param outputDirectory the output directory
+	 */
+	public Path getOutputDir()  {
+		if (this.outDir == null ) {
+			String dirName = null;
+			try {
+				dirName = this.properties.getProperty(Config.OUTDIR_PROP_NAME);
+				this.outDir = toPath(dirName);
+			} catch (NotDirectoryException e) {
+				LOG.warn("Bad output directory name '{}'", dirName);
+				setToFailover();
+			}
+		}
+		return this.outDir;
+	}
+
+	/**
+	 * @return data chunk buffer size
+	 */
+	public int getBufferSize() {
+		return bufferSize;
+	}
+
+	/**
+	 * @param bufferSize data chunk buffer size
+	 */
+	public void setBufferSize(int bufferSize) {
+		this.bufferSize = bufferSize;
 	}
 }

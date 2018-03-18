@@ -15,20 +15,18 @@ import org.slf4j.LoggerFactory;
 // templating or remove it.
 public class TestFileGenerator {
 	private static final Logger logger = LoggerFactory.getLogger(TestFileGenerator.class);
-	private static String outputFileAndLocation;
-	private static int repeat;
 
 	public static void main(String[] args) {
 		if (args.length < 2) {
 			logger.info("Usage-> TestFileGenerator outputFileAndLocation repeatInputNumberOfTimes");
 			return;
 		}
-		outputFileAndLocation = args[0];
-		repeat = Integer.parseInt(args[1]);
-		new TestFileGenerator().buildLarge();
+		String outputFileAndLocation = args[0];
+		int repeat = Integer.parseInt(args[1]);
+		new TestFileGenerator().buildLarge(outputFileAndLocation, repeat);
 	}
 
-	private void buildLarge() {
+	void buildLarge(String outputFileAndLocation, int repeat) {
 		logger.info("Building large file...");
 		try {
 			File statText = new File(outputFileAndLocation);
@@ -36,13 +34,14 @@ public class TestFileGenerator {
 			OutputStreamWriter osw = new OutputStreamWriter(os);
 			Writer w = new BufferedWriter(osw);
 			
-			byte[] dataChunk = new byte[1024];
+			final int BUFFER_SIZE = 1024;
+			byte[] dataChunk = new byte[BUFFER_SIZE];
 			String data;	
 			int bytesRead = 0;
 			
 			for (int i = 1; i <= repeat; i++) {
 				logger.info("REPEAT:------------->{}", i);
-				InputStream inputStream = getClass().getClassLoader().getResourceAsStream("files/837PFile_Large.txt");
+				InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("files/837PFile_Large.txt");
                 while ((bytesRead = inputStream.read(dataChunk)) != -1) {
 					data = new String(dataChunk, 0, bytesRead);
 					logger.info(data);
@@ -53,6 +52,7 @@ public class TestFileGenerator {
 			w.close();
 			logger.info("DONE");
 		} catch (Exception e) {
+			logger.error("Exception building large file.", e);
 			e.printStackTrace();
 		}
 	}

@@ -18,9 +18,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.null0.edi.debatcher.DebatcherException.ERROR_LEVEL;
 import org.null0.edi.debatcher.DebatcherException.ERROR_OR_EXCEPTION;
 import org.null0.edi.debatcher.Delimiters.EdiWrapStyle;
-import org.null0.edi.debatcher.EncounterEdiValidator.CLAIM_TYPE;
-import org.null0.edi.debatcher.EncounterEdiValidator.ERROR;
-import org.null0.edi.debatcher.EncounterEdiValidator.X12_ELEMENT;
+import org.null0.edi.debatcher.EdiValidator.CLAIM_TYPE;
+import org.null0.edi.debatcher.EdiValidator.ERROR;
+import org.null0.edi.debatcher.EdiValidator.X12_ELEMENT;
 import org.null0.edi.debatcher.MetadataLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,11 @@ public class Debatcher {
 	private static final int hlSubscriberLevelCode = 22;	
 	private CLAIM_TYPE claimType;
 
+	private Config config = new Config();
 	private Delimiters delimiters = new Delimiters();
+	private MetadataLogger metadataLogger;
+	private EdiValidator ediValidator;
+
 	private InputStream inputStream;
 	private String[] segments = null;
 	private int segmentIndex = 0;
@@ -74,18 +78,16 @@ public class Debatcher {
 	private Set<String> segmentsBeforeRefD9ForP; // TODO: specific to claims (873). We could decouple a bit more. 
 	private Set<String> segmentsBeforeRefD9ForI; // TODO: specific to claims (873). We could decouple a bit more. 
 	private String segment = null;
-	private MetadataLogger metadataLogger;
-	private EncounterEdiValidator ediValidator;
 	private String outputLocation;
 	private Map<String, Long> claimIdMap = new HashMap<String, Long>();
 	private boolean transactionIdUpdate = true;
 
 	public Debatcher(MetadataLogger metadataLogger) {
 		this.metadataLogger = metadataLogger;
-		this.ediValidator = new EncounterEdiValidatorDefault(false); // default implementation for the edi validator
+		this.ediValidator = new EdiValidatorDefault(false); // default implementation for the edi validator
 	}
 
-	public Debatcher(MetadataLogger metadataLogger, EncounterEdiValidator ediValidator) {
+	public Debatcher(MetadataLogger metadataLogger, EdiValidator ediValidator) {
 		this.metadataLogger = metadataLogger;
 		this.ediValidator = ediValidator;
 	}
@@ -94,7 +96,7 @@ public class Debatcher {
 		logger.info("debatching started..." + transactionId);
 		this.transactionId = transactionId;
 		this.inputStream = is;
-		this.outputLocation = (new Config()).getOutputDir().toString();		
+		this.outputLocation = this.config.getOutputDir().toString();		
 		this.batchIdMetadata = metadataLogger.logBatchSubmissionData(transactionId);
 
 		readInterchangeControls();
@@ -123,7 +125,7 @@ public class Debatcher {
 			}
 			if (segment == null || segment.equals("\r\n")) {
 				throw new DebatcherException ("Invalid Control Structure",
-						EncounterEdiValidatorDefault.TA1_ERROR_ISAIEA,
+						EdiValidatorDefault.TA1_ERROR_ISAIEA,
 						ERROR.TYPE_TA1, ERROR_LEVEL.Batch, batchIdMetadata,
 						DebatcherException.ERROR_OR_EXCEPTION.Exception);
 			}
@@ -166,7 +168,7 @@ public class Debatcher {
 			if (!isa13.equals(iea02)) {
 				logger.error("ISA13 {} & IEA02 {} don't match", isa13, iea02);
 				throw new DebatcherException("ISA13 & IEA02 don't match",
-						EncounterEdiValidatorDefault.TA1_ERROR_ISA13,
+						EdiValidatorDefault.TA1_ERROR_ISA13,
 						ERROR.TYPE_TA1,
 						ERROR_LEVEL.Batch,
 						batchIdMetadata,
@@ -226,7 +228,7 @@ public class Debatcher {
 		while (true) {
 			if (!"ST".equals(readField(segment, 0))) {
 				throw new DebatcherException ("Missing ST segment",
-						EncounterEdiValidatorDefault.IK3_999_ERROR_MISS_SEG,
+						EdiValidatorDefault.IK3_999_ERROR_MISS_SEG,
 						ERROR.TYPE_999,
 						ERROR_LEVEL.Batch,
 						batchIdMetadata,
@@ -348,9 +350,9 @@ public class Debatcher {
 
 		if (isIeaFound) {
 			// throw new DebatcherException("Missing CLM segment",
-			// EncounterEdiValidatorDefault.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999,
+			// EdiValidatorDefault.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999,
 			// ERROR_LEVEL.Batch, batchIdMetadata, ERROR_OR_EXCEPTION.Exception);
-			ediValidator.logError(batchIdMetadata, EncounterEdiValidatorDefault.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999, "Missing CLM segment");
+			ediValidator.logError(batchIdMetadata, EdiValidatorDefault.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999, "Missing CLM segment");
 		} else {
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.IEA01, null, null);
 		}
@@ -382,7 +384,7 @@ public class Debatcher {
 			throw new Exception("Unexpected end of file while attempting to read more segments");
 		}
 
-		byte[] dataChunk = new byte[1024]; // chunks
+		byte[] dataChunk = new byte[config.getBufferSize()]; // chunks
 		String data = ""; // data buffer
 		int bytesRead = 0;
 		boolean lastDataChunkEndsWithSgmtDlm = false;
@@ -396,7 +398,7 @@ public class Debatcher {
 
 			// Data buffer must contain complete segments, no partials
 			data = this.lastPartialSegment + new String(dataChunk, 0, bytesRead);
-			if (bytesRead < 1024) {
+			if (bytesRead < config.getBufferSize()) {
 				this.lastDataChunkReturned = true;
 			}
 			break;
@@ -407,7 +409,7 @@ public class Debatcher {
 		if (!this.initialFileValidation) {
 			if (!"ISA".equals(data.substring(0, 3))) {
 				throw new DebatcherException ("Not a valid Interchange Segment",
-						EncounterEdiValidatorDefault.TA1_ERROR_ISAIEA,
+						EdiValidatorDefault.TA1_ERROR_ISAIEA,
 						ERROR.TYPE_TA1, ERROR_LEVEL.Batch,
 						batchIdMetadata,
 						ERROR_OR_EXCEPTION.Exception);
@@ -488,7 +490,7 @@ public class Debatcher {
 					clm01 = readField(segment, 1);
 					if (clm01 == null || clm01.isEmpty()) {
 						ediValidator.logError(batchIdMetadata,
-								EncounterEdiValidatorDefault.IK3_999_ERROR_MISS_DATA_ELEMENT, ERROR.TYPE_999,
+								EdiValidatorDefault.IK3_999_ERROR_MISS_DATA_ELEMENT, ERROR.TYPE_999,
 								"Missing CLM01 value");
 					}
 					clm05 = readField(segment, 5);

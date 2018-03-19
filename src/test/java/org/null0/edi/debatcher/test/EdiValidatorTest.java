@@ -6,10 +6,10 @@ import static org.junit.Assert.fail;
 import java.io.InputStream;
 
 import org.junit.Ignore;
-import org.null0.edi.debatcher.Config;
+import org.null0.edi.debatcher.ConfigDefault;
 import org.null0.edi.debatcher.Debatcher;
 import org.null0.edi.debatcher.DebatcherException;
-import org.null0.edi.debatcher.EdiValidator;
+import org.null0.edi.debatcher.interfaces.EdiValidator;
 import org.null0.edi.debatcher.EdiValidatorDefault;
 import org.null0.edi.debatcher.MetadataLoggerDefault;
 
@@ -19,7 +19,7 @@ public class EdiValidatorTest {
 
 	@org.junit.Before
 	public void setup() throws Exception {
-		directory = new Config().getOutputDirectory().toString();
+		directory = new ConfigDefault().getOutputDirectory().toString();
 	}
 
 	@Ignore
@@ -32,7 +32,7 @@ public class EdiValidatorTest {
 	@org.junit.Test
 	public void test_ISA11() throws Exception {
 		String file = "InvalidISA11";
-		new Debatcher(new MetadataLoggerDefault()).debatch(file, getIs(file));
+		new Debatcher().debatch(file, getIs(file));
 	}
 
 	// Test
@@ -170,8 +170,11 @@ public class EdiValidatorTest {
 	public void validate(String file, String errorCode) throws Exception {
 		long batchId = 0;
 		try {
-			EdiValidator ediValidator = new EdiValidatorDefault(true);
-			new Debatcher(new MetadataLoggerDefault(), ediValidator).debatch(file, batchId, getIs(file), directory, false);
+			Debatcher debatcher = new Debatcher (
+					new ConfigDefault(),
+					new EdiValidatorDefault(true),
+					new MetadataLoggerDefault());
+			debatcher.debatch(file, batchId, getIs(file), directory, false);
 			fail("Expecting error " + errorCode);
 		} catch (DebatcherException e) {
 			assertEquals(errorCode, e.getErrorCode());

@@ -1,4 +1,4 @@
-package org.null0.edi.debatcher;
+package org.null0.edi.debatcher.interfaces;
 
 // TODO: reverse-engineer metadata logger to decouple
 public interface MetadataLogger {

@@ -1,5 +1,5 @@
 package org.null0.edi.debatcher;
-import org.null0.edi.debatcher.EdiValidator.ERROR;
+import org.null0.edi.debatcher.interfaces.EdiValidator.ERROR;
 
 // TODO: This was migrated from something too complex; simplify
 public class DebatcherException extends Exception {
@@ -9,59 +9,15 @@ public class DebatcherException extends Exception {
 	private ERROR errorType;
 	private ERROR_LEVEL errorLevel;
 	private String ediFileName;
-	private ERROR_OR_EXCEPTION errorOrException;
 
-	public static enum ERROR_OR_EXCEPTION {
-		Exception
-	};
+	public static enum ERROR_LEVEL { Batch, Encounter }; // NO_UCD (use default)
 
-	public static enum ERROR_LEVEL {
-		Batch, Encounter
-	};
-
-	public DebatcherException() {
-		super();
-	}
-
-	public DebatcherException(Throwable e) {
-		super(e);
-	}
-
-	public DebatcherException(String msg, String errorCode) {
-		super(msg);
-		this.errorCode = errorCode;
-	}
-
-	public DebatcherException(String msg, String errorCode, long idBatch, ERROR errorType, ERROR_LEVEL errorLevel) {
-		super(msg);
-		this.errorCode = errorCode;
-		this.idBatch = idBatch;
-		this.errorType = errorType;
-		this.errorLevel = errorLevel;
-	}
-
-	public DebatcherException(String msg, long idBatch, String ediFileName, ERROR_OR_EXCEPTION errorOrException) {
-		super(msg);
-		this.idBatch = idBatch;
-		this.ediFileName = ediFileName;
-		this.errorOrException = errorOrException;
-	}
-
-	public DebatcherException(String msg, String errorCode, ERROR errorType, ERROR_LEVEL errorLevel, long idBatch, ERROR_OR_EXCEPTION errorOrException) {
+	public DebatcherException(String msg, String errorCode, ERROR errorType, ERROR_LEVEL errorLevel, long idBatch) {
 		super(msg);
 		this.errorCode = errorCode;
 		this.errorType = errorType;
 		this.errorLevel = errorLevel;
 		this.idBatch = idBatch;
-		this.errorOrException = errorOrException;
-	}
-
-	public ERROR_OR_EXCEPTION getErrorOrException() {
-		return errorOrException;
-	}
-
-	public void setErrorOrException(ERROR_OR_EXCEPTION errorOrException) {
-		this.errorOrException = errorOrException;
 	}
 
 	public String getEdiFileName() {

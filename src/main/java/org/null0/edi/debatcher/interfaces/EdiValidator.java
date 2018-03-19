@@ -1,4 +1,4 @@
-package org.null0.edi.debatcher;
+package org.null0.edi.debatcher.interfaces;
 
 import java.util.HashMap;
 import java.util.Map;

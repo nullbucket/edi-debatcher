@@ -9,11 +9,9 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
-
+import org.null0.edi.debatcher.interfaces.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jdk.internal.jline.internal.Log;
 
 /***
  * 
@@ -21,7 +19,7 @@ import jdk.internal.jline.internal.Log;
  * 
  */
 // TODO: define an interface for Config so that for unit testing we can use it instead without any file I/O dependencies
-public class Config {
+public class ConfigDefault implements Config {
 	private static final String ENVAR_NAME = "edi_debatch_config_file"; // If this environment variable exists it must contain full valid path to properties file	
 	private static final String FILE_NAME = "debatcher.properties"; // Default expected local properties file name if config_env_name environment variable does not exist 
 	private static final Logger LOG = LoggerFactory.getLogger(Config.class); // Logger
@@ -31,7 +29,7 @@ public class Config {
 	private Path outDir; // configuration
 	private int bufferSize; // configuration
 
-	public Config() {
+	public ConfigDefault() {
 		if (!initFromEnvVar()) {
 			if (!initFromLocal()) {
 				initFromFailover();
@@ -41,27 +39,36 @@ public class Config {
 		try {
 			setProperties();
 		} catch (Exception e) {
-			Log.error("Exception in CTOR", e);
+			LOG.error("Exception in CTOR", e);
 		}
 	}
 	
-	public Config (String file) throws Exception {
+	public ConfigDefault (String file) throws Exception {
 		this.mode = ConfigurationSource.EXTERNAL_PROPERTIES;
 		initFromFile(file);		
 		setProperties();
 	}	
 	
-	public enum ConfigurationSource { ENVIRONMENT_VARIABLE, LOCAL_PROPERTIES, EXTERNAL_PROPERTIES, OVERRIDE, FAILOVER } 	
+	/* (non-Javadoc)
+	 * @see org.null0.edi.debatcher.ConfigI#getConfigurationSource()
+	 */
+	@Override
 	public ConfigurationSource getConfigurationSource() {
 		return this.mode;		
 	}
 	
-	/** @param the output directory */
+	/* (non-Javadoc)
+	 * @see org.null0.edi.debatcher.ConfigI#getOutputDirectory()
+	 */
+	@Override
 	public Path getOutputDirectory()  {
 		return this.outDir;
 	}
 
-	/** @return data chunk buffer size */
+	/* (non-Javadoc)
+	 * @see org.null0.edi.debatcher.ConfigI#getBufferSize()
+	 */
+	@Override
 	public int getBufferSize() {
 		return bufferSize;
 	}
@@ -109,10 +116,10 @@ public class Config {
 		
 		try {
 			this.outDir = toPath(getLocalDir());
+			LOG.warn("Failover (see previous errors). Config.outDir set to dir relative to .jar: {}", this.outDir);
 		} catch (NotDirectoryException e) {
-			LOG.error("Unable to determine java resource path", e); // This should never happen
+			LOG.error("Unable to recover using failover: could not determine java resource path", e); // This should never happen
 		} 
-		LOG.warn("Failover (see previous errors). Config.outDir set to dir relative to .jar: {}", this.outDir);
 	}
 	
 	private String getLocalDir() {
@@ -133,7 +140,7 @@ public class Config {
 
 	private Properties getPropertiesFromResource() throws IOException {
 		Properties p = null;
-		try(InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(FILE_NAME)) {				
+		try (InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(FILE_NAME)) {				
 			p = new Properties();
 			p.load(stream);
 		} catch (IOException e) {

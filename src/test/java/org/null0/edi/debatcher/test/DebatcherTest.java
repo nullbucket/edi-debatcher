@@ -5,9 +5,10 @@ import java.io.InputStream;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.null0.edi.debatcher.Config;
+import org.null0.edi.debatcher.ConfigDefault;
+import org.null0.edi.debatcher.interfaces.Config;
 // import org.null0.metadata.services.DeBatchedDataLogger;
-import org.null0.edi.debatcher.MetadataLogger;
+import org.null0.edi.debatcher.interfaces.MetadataLogger;
 
 // TODO: This is scary. All the useful tests have been commented out! Why?
 // First we'll get the other unit tests to pass (and verify their accuracy)
@@ -20,7 +21,7 @@ public class DebatcherTest {
 
 	@Before
 	public void setUp() throws Exception {
-		directory = new Config().getOutputDirectory().toString();
+		directory = new ConfigDefault().getOutputDirectory().toString();
 		/*
 		 * logger.info("deleting the old messages from the output folder..."); File dir
 		 * = new File(DIRECTORY+"/output"); for(File file: dir.listFiles())

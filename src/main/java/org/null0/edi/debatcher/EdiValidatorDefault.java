@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.null0.edi.debatcher.interfaces.EdiValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -203,7 +204,12 @@ public class EdiValidatorDefault implements EdiValidator {
 			return;
 		}
 		if (stopAtFirstValidationFailure) {
-			throw new DebatcherException(errorMessage, errorCode, errorType, DebatcherException.ERROR_LEVEL.Batch, batchId, DebatcherException.ERROR_OR_EXCEPTION.Exception);
+			throw new DebatcherException(
+					errorMessage, 
+					errorCode, 
+					errorType, 
+					DebatcherException.ERROR_LEVEL.Batch, 
+					batchId);
 		}
 	}
 

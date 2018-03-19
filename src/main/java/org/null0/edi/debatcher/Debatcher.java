@@ -16,12 +16,16 @@ import java.util.Stack;
 
 import org.apache.commons.lang3.StringUtils;
 import org.null0.edi.debatcher.DebatcherException.ERROR_LEVEL;
-import org.null0.edi.debatcher.DebatcherException.ERROR_OR_EXCEPTION;
 import org.null0.edi.debatcher.Delimiters.EdiWrapStyle;
-import org.null0.edi.debatcher.EdiValidator.CLAIM_TYPE;
-import org.null0.edi.debatcher.EdiValidator.ERROR;
-import org.null0.edi.debatcher.EdiValidator.X12_ELEMENT;
-import org.null0.edi.debatcher.MetadataLogger;
+import org.null0.edi.debatcher.interfaces.EdiValidator;
+import org.null0.edi.debatcher.interfaces.EdiValidator.CLAIM_TYPE;
+import org.null0.edi.debatcher.interfaces.EdiValidator.ERROR;
+import org.null0.edi.debatcher.interfaces.EdiValidator.X12_ELEMENT;
+import org.null0.edi.debatcher.interfaces.Config;
+import org.null0.edi.debatcher.interfaces.MetadataLogger;
+import org.null0.edi.debatcher.MetadataLoggerDefault;
+import org.null0.edi.debatcher.EdiValidatorDefault;
+import org.null0.edi.debatcher.ConfigDefault;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,10 +38,10 @@ public class Debatcher {
 	private static final int hlSubscriberLevelCode = 22;	
 	private CLAIM_TYPE claimType;
 
-	private Config config = new Config();
-	private Delimiters delimiters = new Delimiters();
+	private Config config;
 	private MetadataLogger metadataLogger;
 	private EdiValidator ediValidator;
+	private Delimiters delimiters = new Delimiters();
 
 	private InputStream inputStream;
 	private String[] segments = null;
@@ -82,14 +86,16 @@ public class Debatcher {
 	private Map<String, Long> claimIdMap = new HashMap<String, Long>();
 	private boolean transactionIdUpdate = true;
 
-	public Debatcher(MetadataLogger metadataLogger) {
-		this.metadataLogger = metadataLogger;
-		this.ediValidator = new EdiValidatorDefault(false); // default implementation for the edi validator
+	public Debatcher() {
+		this.config = new ConfigDefault();
+		this.ediValidator = new EdiValidatorDefault(false);
+		this.metadataLogger = new MetadataLoggerDefault();
 	}
 
-	public Debatcher(MetadataLogger metadataLogger, EdiValidator ediValidator) {
-		this.metadataLogger = metadataLogger;
+	public Debatcher(Config config, EdiValidator ediValidator, MetadataLogger metadataLogger) {
+		this.config = config;
 		this.ediValidator = ediValidator;
+		this.metadataLogger = metadataLogger;
 	}
 
 	public void debatch(String transactionId, InputStream is) throws Exception {
@@ -126,8 +132,7 @@ public class Debatcher {
 			if (segment == null || segment.equals("\r\n")) {
 				throw new DebatcherException ("Invalid Control Structure",
 						EdiValidatorDefault.TA1_ERROR_ISAIEA,
-						ERROR.TYPE_TA1, ERROR_LEVEL.Batch, batchIdMetadata,
-						DebatcherException.ERROR_OR_EXCEPTION.Exception);
+						ERROR.TYPE_TA1, ERROR_LEVEL.Batch, batchIdMetadata);
 			}
 			isaSegment = segment.replaceAll("\\r|\\n", "");
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.DATA_SEPARATOR, fieldDlm, null);
@@ -171,8 +176,7 @@ public class Debatcher {
 						EdiValidatorDefault.TA1_ERROR_ISA13,
 						ERROR.TYPE_TA1,
 						ERROR_LEVEL.Batch,
-						batchIdMetadata,
-						ERROR_OR_EXCEPTION.Exception);
+						batchIdMetadata);
 			}
 		}
 
@@ -231,8 +235,7 @@ public class Debatcher {
 						EdiValidatorDefault.IK3_999_ERROR_MISS_SEG,
 						ERROR.TYPE_999,
 						ERROR_LEVEL.Batch,
-						batchIdMetadata,
-						ERROR_OR_EXCEPTION.Exception);
+						batchIdMetadata);
 			}
 			stCnt++;
 			segmentCnt = 1;
@@ -408,11 +411,12 @@ public class Debatcher {
 		// If this is our very first chunk, do some validation and initialization
 		if (!this.initialFileValidation) {
 			if (!"ISA".equals(data.substring(0, 3))) {
-				throw new DebatcherException ("Not a valid Interchange Segment",
+				throw new DebatcherException (
+						"Not a valid Interchange Segment",
 						EdiValidatorDefault.TA1_ERROR_ISAIEA,
-						ERROR.TYPE_TA1, ERROR_LEVEL.Batch,
-						batchIdMetadata,
-						ERROR_OR_EXCEPTION.Exception);
+						ERROR.TYPE_TA1,
+						ERROR_LEVEL.Batch,
+						batchIdMetadata);
 			}
 			this.initialFileValidation = true;
 			fieldDlm = data.substring(103, 104);

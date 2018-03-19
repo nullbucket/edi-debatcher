@@ -96,7 +96,7 @@ public class Debatcher {
 		logger.info("debatching started..." + transactionId);
 		this.transactionId = transactionId;
 		this.inputStream = is;
-		this.outputLocation = this.config.getOutputDir().toString();		
+		this.outputLocation = this.config.getOutputDirectory().toString();		
 		this.batchIdMetadata = metadataLogger.logBatchSubmissionData(transactionId);
 
 		readInterchangeControls();

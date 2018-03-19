@@ -19,7 +19,7 @@ public class EdiValidatorTest {
 
 	@org.junit.Before
 	public void setup() throws Exception {
-		directory = new Config().getOutputDir().toString();
+		directory = new Config().getOutputDirectory().toString();
 	}
 
 	@Ignore

@@ -20,7 +20,7 @@ public class DebatcherTest {
 
 	@Before
 	public void setUp() throws Exception {
-		directory = new Config().getOutputDir().toString();
+		directory = new Config().getOutputDirectory().toString();
 		/*
 		 * logger.info("deleting the old messages from the output folder..."); File dir
 		 * = new File(DIRECTORY+"/output"); for(File file: dir.listFiles())

@@ -12,46 +12,25 @@ import org.null0.edi.debatcher.Config;
 
 public class ConfigTest {
 
-	@Test
-	public void testSetOutputDir() {
-		String dir = Paths.get(".").toAbsolutePath().normalize().toString();
-		try {
-			Config config = new Config();
-			config.setOutputDir(dir);
-			assertEquals(Config.ConfigurationSource.OVERRIDE, config.getConfigurationSource());
-		} catch (NotDirectoryException e) {
-			fail("NotDirectoryException");
-		}		
-	}
 
 	@Test
-	public void testGetBufferSize_Failover() {
-		assertEquals(1024, new Config().getBufferSize());
-	}	
-	
-	@Test
-	public void testGetOutputDir_Failover() {
-		Config config = testOutputDir();		
-		assertEquals(Config.ConfigurationSource.FAILOVER, config.getConfigurationSource());
+	public void testLocalPropertiesFile() throws Exception {
+		Config config = testOutputDirectory();		
+		assertEquals(Config.ConfigurationSource.LOCAL_PROPERTIES, config.getConfigurationSource());
+		assertEquals(8096, config.getBufferSize());
+		assertEquals(".", config.getOutputDirectory().toString());
 	}	
 
 	@Test
-	public void testGetOutputDir_PropertiesFile() {
+	public void testExternalPropertiesFile() throws Exception {
 		// TODO: we need to set up the local file "debatcher.properties" for this to pass
-		Config config = testOutputDir();		
-		assertEquals(Config.ConfigurationSource.PROPERTIES, config.getConfigurationSource());
+		Config config = testOutputDirectory();		
+		assertEquals(Config.ConfigurationSource.EXTERNAL_PROPERTIES, config.getConfigurationSource());
 	}	
 
-	@Test
-	public void testGetOutputDir_EnvironmentVariable() {
-		// TODO: we need to set up the a "debatcher.properties" files in a subdirectory and point an environment variable to it for this to pass
-		Config config =testOutputDir();		
-		assertEquals(Config.ConfigurationSource.ENVIRONMENT_VARIABLE, config.getConfigurationSource());
-	}
-	
-	private Config testOutputDir() {
+	private Config testOutputDirectory() throws Exception {
 		Config config = new Config();
-		Path path = config.getOutputDir();	
+		Path path = config.getOutputDirectory();	
 		assertTrue(Files.exists(path));
 		return config;
 	}

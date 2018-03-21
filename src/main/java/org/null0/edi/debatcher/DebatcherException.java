@@ -12,7 +12,7 @@ public class DebatcherException extends Exception {
 
 	public static enum ERROR_LEVEL { Batch, Encounter }; // NO_UCD (use default)
 
-	public DebatcherException(String msg, String errorCode, ERROR errorType, ERROR_LEVEL errorLevel, long idBatch) {
+	public DebatcherException (String msg, String errorCode, ERROR errorType, ERROR_LEVEL errorLevel, long idBatch) {
 		super(msg);
 		this.errorCode = errorCode;
 		this.errorType = errorType;
@@ -65,34 +65,33 @@ public class DebatcherException extends Exception {
 	}
 
 	private static String getStackTraceFromException(Throwable e, StringBuffer buf) {
-		String stackTrace = null;
-
-		if (e != null) {
-			StackTraceElement[] elements = e.getStackTrace();
-			if (elements != null && elements.length > 0) {
-				if (buf == null) {
-					if (e.getMessage() != null)
-						buf = new StringBuffer(e.getMessage());
-					else
-						buf = new StringBuffer();
-				} else {
-					buf.append("\n\n");
-					buf.append(e.getMessage());
-				}
-				for (int i = 0; i < elements.length; i++) {
-					StackTraceElement element = elements[i];
-					buf.append("\nat ");
-					buf.append(element.toString());
-				}
+		if (e == null ) {
+			return null;
+		}
+		
+		StackTraceElement[] elements = e.getStackTrace();
+		if (elements != null && elements.length > 0) {
+			if (buf == null) {
+				if (e.getMessage() != null)
+					buf = new StringBuffer(e.getMessage());
+				else
+					buf = new StringBuffer();
+			} else {
+				buf.append("\n\n");
+				buf.append(e.getMessage());
 			}
-
-			if (e.getCause() != null) {
-				getStackTraceFromException(e.getCause(), buf);
+			for (int i = 0; i < elements.length; i++) {
+				StackTraceElement element = elements[i];
+				buf.append("\nat ");
+				buf.append(element.toString());
 			}
-			stackTrace = new String(buf);
 		}
 
-		return stackTrace;
+		if (e.getCause() != null) {
+			getStackTraceFromException(e.getCause(), buf);
+		}
+		
+		return new String(buf);
 	}
 
 	public static Throwable getLowestLevelCause(Throwable e) {

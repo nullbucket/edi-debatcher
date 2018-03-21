@@ -9,6 +9,8 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
+
+import org.apache.commons.lang3.StringUtils;
 import org.null0.edi.debatcher.interfaces.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +28,12 @@ public class ConfigDefault implements Config {
 	
 	private Properties properties;
 	private ConfigurationSource mode;
-	private Path outDir; // configuration
-	private int bufferSize; // configuration
+	
+	// Configuration Values from debatcher.properties
+	private Path outDir;
+	private int bufferSize;
+	private String[] validSendersISA06;
+	private String[] validReceiversISA08;
 
 	public ConfigDefault() {
 		if (!initFromEnvVar()) {
@@ -49,33 +55,41 @@ public class ConfigDefault implements Config {
 		setProperties();
 	}	
 	
-	/* (non-Javadoc)
-	 * @see org.null0.edi.debatcher.ConfigI#getConfigurationSource()
-	 */
 	@Override
 	public ConfigurationSource getConfigurationSource() {
 		return this.mode;		
 	}
 	
-	/* (non-Javadoc)
-	 * @see org.null0.edi.debatcher.ConfigI#getOutputDirectory()
-	 */
 	@Override
 	public Path getOutputDirectory()  {
 		return this.outDir;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.null0.edi.debatcher.ConfigI#getBufferSize()
-	 */
 	@Override
 	public int getBufferSize() {
 		return bufferSize;
 	}
 	
+	@Override
+	public String[] getValidSenders() {
+		return validSendersISA06;
+	}
+
+	@Override
+	public String[] getValidReceivers() {
+		return validReceiversISA08;
+	}
+	
 	private void setProperties() throws Exception {
 		this.bufferSize = Integer.parseInt(this.properties.getProperty("buffer_size"));
 		this.outDir = toPath(this.properties.getProperty("output_directory"));		
+		this.validSendersISA06 = setList("valid_senders_isa06");
+		this.validReceiversISA08 = setList("valid_receivers_isa08");
+	}
+	
+	private String[] setList(String propertyName) {
+		String s = this.properties.getProperty(propertyName);
+		return StringUtils.isAllBlank(s) ? new String[0] : s.split(",");
 	}
 	
 	private boolean initFromEnvVar() {

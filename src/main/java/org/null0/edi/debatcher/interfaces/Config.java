@@ -4,12 +4,9 @@ import java.nio.file.Path;
 
 public interface Config {
 	public enum ConfigurationSource { ENVIRONMENT_VARIABLE, LOCAL_PROPERTIES, EXTERNAL_PROPERTIES, OVERRIDE, FAILOVER } 	
-
 	public ConfigurationSource getConfigurationSource();
-
-	Path getOutputDirectory();
-
-	/** @return data chunk buffer size */
+	public Path getOutputDirectory();
 	public int getBufferSize();
-
+	public String[] getValidSenders();
+	public String[] getValidReceivers();
 }

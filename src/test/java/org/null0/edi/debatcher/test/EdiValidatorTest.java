@@ -8,7 +8,6 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 
 import org.junit.Ignore;
-import org.null0.edi.debatcher.ConfigDefault;
 import org.null0.edi.debatcher.Debatcher;
 import org.null0.edi.debatcher.DebatcherException;
 import org.null0.edi.debatcher.interfaces.Config;
@@ -18,11 +17,9 @@ import org.null0.edi.debatcher.MetadataLoggerDefault;
 
 public class EdiValidatorTest {
 	static String DateFormatForFileNames = "yyyyMMdd-HHmmss-SSS";
-	private String directory;
 	
 	@org.junit.Before
 	public void setup() throws Exception {
-		directory = new ConfigDefault().getOutputDirectory().toString();
 	}
 
 	@Ignore
@@ -173,7 +170,7 @@ public class EdiValidatorTest {
 	private void checkError(String id, String errorCode) throws Exception {
 		long batchId = 0;
 		try {
-			createDebatcher().debatch(id, batchId, openStream(id), directory, false);
+			createDebatcher().debatch(id, batchId, openStream(id));
 			fail("Expecting error " + errorCode);
 		} catch (DebatcherException e) {
 			assertEquals(errorCode, e.getErrorCode());

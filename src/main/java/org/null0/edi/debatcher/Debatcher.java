@@ -84,42 +84,33 @@ public class Debatcher {
 	private String segment = null;
 	private String outputLocation;
 	private Map<String, Long> claimIdMap = new HashMap<String, Long>();
-	private boolean transactionIdUpdate = true;
+	private boolean updateTransactionId = true;
 
 	public Debatcher() {
-		this.config = new ConfigDefault();
-		this.ediValidator = new EdiValidatorDefault(false);
-		this.metadataLogger = new MetadataLoggerDefault();
+		this (new ConfigDefault(), new EdiValidatorDefault(false), new MetadataLoggerDefault());
 	}
 
 	public Debatcher(Config config, EdiValidator ediValidator, MetadataLogger metadataLogger) {
 		this.config = config;
 		this.ediValidator = ediValidator;
 		this.metadataLogger = metadataLogger;
-	}
-
-	public void debatch(String transactionId, InputStream is) throws Exception {
-		logger.info("debatching started..." + transactionId);
-		this.transactionId = transactionId;
-		this.inputStream = is;
 		this.outputLocation = this.config.getOutputDirectory().toString();		
-		this.batchIdMetadata = metadataLogger.logBatchSubmissionData(transactionId);
-
-		readInterchangeControls();
-		is.close();
+		this.updateTransactionId = this.config.willUpdateTransactionId();
 	}
 
-	public Map<String, Long> debatch(String transactionId, long batchIdMetadata, InputStream is, String outputLocation,	boolean transactionIdUpdate) throws Exception {
+	public void debatch(String transactionId, InputStream inputStream) throws Exception {
+		debatch(transactionId, -1, inputStream);
+	}
+
+	public Map<String, Long> debatch(String transactionId, long batchIdMetadata, InputStream inputStream) throws Exception {
 		logger.info("debatching started..." + transactionId);
 		this.transactionId = transactionId;
-		this.inputStream = is;
-		this.batchIdMetadata = batchIdMetadata;
-		this.outputLocation = outputLocation;
-		this.transactionIdUpdate = transactionIdUpdate;
-
+		this.inputStream = inputStream;
+		this.batchIdMetadata = batchIdMetadata < 0 ? this.metadataLogger.logBatchSubmissionData(transactionId) : batchIdMetadata;
+		
 		readInterchangeControls();
-		is.close();
-
+		
+		inputStream.close(); // TODO: Why are we closing a stream we do not own? Shouldn't that be the responsibility of the caller that passed it in?
 		return claimIdMap;
 	}
 
@@ -130,9 +121,7 @@ public class Debatcher {
 				continue;
 			}
 			if (segment == null || segment.equals("\r\n")) {
-				throw new DebatcherException ("Invalid Control Structure",
-						EdiValidatorDefault.TA1_ERROR_ISAIEA,
-						ERROR.TYPE_TA1, ERROR_LEVEL.Batch, batchIdMetadata);
+				throw new DebatcherException ("Invalid Control Structure", EdiValidatorDefault.TA1_ERROR_ISAIEA, ERROR.TYPE_TA1, ERROR_LEVEL.Batch, batchIdMetadata);
 			}
 			isaSegment = segment.replaceAll("\\r|\\n", "");
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.DATA_SEPARATOR, fieldDlm, null);
@@ -141,9 +130,9 @@ public class Debatcher {
 
 			isaIdMetadata = metadataLogger.logIsaData(batchIdMetadata, isa13, isaSegment);
 			String isa06 = readField(segment, 6);
-			if (transactionIdUpdate) {
+			if (updateTransactionId) {
 				transactionId = isa06.trim() + transactionId;
-				transactionIdUpdate = false;
+				updateTransactionId = false;
 			}
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA06, isa06, null);
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA07, readField(segment, 7), null);

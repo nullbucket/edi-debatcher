@@ -7,6 +7,7 @@ public interface Config {
 	public ConfigurationSource getConfigurationSource();
 	public Path getOutputDirectory();
 	public int getBufferSize();
+	public boolean willUpdateTransactionId();
 	public String[] getValidSenders();
 	public String[] getValidReceivers();
 }

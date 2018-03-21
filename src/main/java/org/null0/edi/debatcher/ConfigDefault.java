@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.null0.edi.debatcher.interfaces.Config;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ public class ConfigDefault implements Config {
 	// Configuration Values from debatcher.properties
 	private Path outDir;
 	private int bufferSize;
+	private boolean willUpdateTransactionId;
 	private String[] validSendersISA06;
 	private String[] validReceiversISA08;
 
@@ -79,10 +81,16 @@ public class ConfigDefault implements Config {
 	public String[] getValidReceivers() {
 		return validReceiversISA08;
 	}
+
+	@Override
+	public boolean willUpdateTransactionId() {
+		return willUpdateTransactionId;
+	}
 	
 	private void setProperties() throws Exception {
 		this.bufferSize = Integer.parseInt(this.properties.getProperty("buffer_size"));
 		this.outDir = toPath(this.properties.getProperty("output_directory"));		
+		this.willUpdateTransactionId = BooleanUtils.toBoolean(this.properties.getProperty("will_update_transaction_id"));
 		this.validSendersISA06 = setList("valid_senders_isa06");
 		this.validReceiversISA08 = setList("valid_receivers_isa08");
 	}

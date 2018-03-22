@@ -104,6 +104,12 @@ public class Debatcher {
 
 	public Map<String, Long> debatch(String transactionId, long batchIdMetadata, InputStream inputStream) throws Exception {
 		logger.info("debatching started..." + transactionId);
+		if (inputStream == null) {
+			final String msg = "Null input stream, nothing to do!";
+			logger.error(msg);
+			throw new NullPointerException(msg);
+		}
+		
 		this.transactionId = transactionId;
 		this.inputStream = inputStream;
 		this.batchIdMetadata = batchIdMetadata < 0 ? this.metadataLogger.logBatchSubmissionData(transactionId) : batchIdMetadata;
@@ -117,12 +123,17 @@ public class Debatcher {
 	private void readInterchangeControls() throws Exception {
 		while (!fileReadCompleted) {
 			getNextSegment();
-			if (delimiters.getOsNewLine().equals(segment)) {
+			
+			if (StringUtils.isAllBlank(segment)) {
+				logger.warn("Ignoring unexpected whitespace.");
 				continue;
 			}
+			
+			/* TODO: we should probably delete this
 			if (segment == null || segment.equals("\r\n")) {
 				throw new DebatcherException ("Invalid Control Structure", EdiValidatorDefault.TA1_ERROR_ISAIEA, ERROR.TYPE_TA1, ERROR_LEVEL.Batch, batchIdMetadata);
-			}
+			}*/
+			
 			isaSegment = segment.replaceAll("\\r|\\n", "");
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.DATA_SEPARATOR, fieldDlm, null);
 			isa13 = readField(segment, 13);

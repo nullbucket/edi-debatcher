@@ -4,6 +4,7 @@ class Delimiters {
 	private char dataElementSeparator;
 	private char segmentTerminator;
 	private EdiWrapStyle ediWrap;
+	private String eol;
 	private String osNewLine;
 	
 	enum EdiWrapStyle {
@@ -51,33 +52,24 @@ class Delimiters {
 	 * @return EdiWrapStyle This setter returns the wrap style (same as calling getLineWrap)
 	 */
 	public EdiWrapStyle setLineWrap(byte[] dataChunk, int maxBytesToScan) {
-		this.ediWrap = EdiWrapStyle.Unwrapped;
+		eol = "";
+		ediWrap = EdiWrapStyle.Unwrapped;
 		int max = Math.min(dataChunk.length, maxBytesToScan); 
 		for (int i = 0; i < max - 1; i++) {
 			if (dataChunk[i] == 0x0D && dataChunk[i + 1] == 0x0A) {
-				this.ediWrap = EdiWrapStyle.Windows; // \r\n
+				ediWrap = EdiWrapStyle.Windows;
+				eol = "\r\n";
 				break;
 			} else if (dataChunk[i] == 0x0A) {
-				this.ediWrap = EdiWrapStyle.Unix; // \n
+				ediWrap = EdiWrapStyle.Unix; // \n
+				eol = "\n";
 				break;
 			}
 		}
-		return this.ediWrap;
+		return ediWrap;
 	}
 	
 	public String getEOL() {
-		String eol;
-		switch (this.ediWrap) {
-		case Windows:
-			eol = "\r\n";
-			break;
-		case Unix:
-			eol = "\n";
-			break;
-		default:
-			eol = "";
-			break;
-		}
 		return eol;
 	}
 

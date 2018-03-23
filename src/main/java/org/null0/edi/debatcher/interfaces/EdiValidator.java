@@ -44,9 +44,11 @@ public interface EdiValidator {
 	static final String[] validISA12 = { "00501" };  // TODO: specific to 837 claims; decouple
 	static final String[] validISA15 = { "P", "T" }; // TODO: specific to 837 claims; decouple
 	
-	// TODO: all these below were hard-coded AND this is NOT the proper way to validate!
-	// According to EDI standards, the valid values below are defined by fields
-	// from the special fixed-sized ISA01 segment.
+	/* TODO: all these below were hard-coded AND this is NOT the proper way to validate!
+	According to EDI standards, the valid values below are defined by fields from the special fixed-sized ISA01 segment.
+	If what we are trying to do is enforce localized validation, these values below need to move to a configuration file, 
+	AND their checks need to be switchable in the config file (enable/disable). See TODOs in EdiValidatorDefaul.
+	*/
 	static final String[] validISA11 = { ":", "^" };
 	static final String[] validISAEnd = { "~" }; // { ":", "~", "\n" };
 	static final String[] validDataElementSeparator = { "*" };

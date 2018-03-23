@@ -33,6 +33,10 @@ import org.slf4j.LoggerFactory;
 public class Debatcher {
 	private static final Logger logger = LoggerFactory.getLogger(Debatcher.class);
 	
+	// TODO: These are specific to claims (837). Decouple.
+	private static final int hlBillProvLevelCode = 20;
+	private static final int hlSubscriberLevelCode = 22;	
+	
 	// Class Invariants (CTOR)
 	// -----------------------
 	private Config config; // injected by greedy CTOR
@@ -67,30 +71,26 @@ public class Debatcher {
 	private String st02;
 	private String gs06;
 	private String isa13;
-	private String clm01; // TODO: specific to claims (873). We could decouple a bit more.
-	private String clm05; // TODO: specific to claims (873). We could decouple a bit more. 
+	private String clm01; // TODO: specific to claims (873). Decouple.
+	private String clm05; // TODO: specific to claims (873). Decouple. 
 	private int isaCnt = 0;
 	private int gsCnt;
 	private int stCnt;
 	private int hlCnt;
-	private int claimCnt = 0;
+	private int claimCnt = 0;  // TODO: specific to claims (837). Decouple.
 	private int segmentCnt = 0;
 	private long isaIdMetadata;
 	private long gsIdMetadata;
 	private long stIdMetadata;
 	private long hlIdMetadata;
 	private Stack<HierarchicalLevel> hlStack;
-	private Set<String> segmentsBeforeRefD9ForP; // TODO: specific to claims (873). We could decouple a bit more. 
-	private Set<String> segmentsBeforeRefD9ForI; // TODO: specific to claims (873). We could decouple a bit more. 
-	private String segment;
-
-	// TODO: These are specific to claims (837). We could decouple them a bit more.
-	private static final int hlBillProvLevelCode = 20;
-	private static final int hlSubscriberLevelCode = 22;	
-	private CLAIM_TYPE claimType;
+	private Set<String> segmentsBeforeRefD9ForP; // TODO: specific to claims (873). Decouple. 
+	private Set<String> segmentsBeforeRefD9ForI; // TODO: specific to claims (873). Decouple. 
+	private String segment;	 	
+	private CLAIM_TYPE claimType; // TODO: specific to claims (837). Decouple.
 	
 	public Debatcher() {
-		this (new ConfigDefault(), new EdiValidatorDefault(false), new MetadataLoggerDefault());
+		this (new ConfigDefault(), new EdiValidatorDefault(new ConfigDefault()), new MetadataLoggerDefault());
 	}
 
 	public Debatcher(Config config, EdiValidator ediValidator, MetadataLogger metadataLogger) {

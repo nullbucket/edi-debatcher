@@ -32,7 +32,7 @@ class Delimiters {
 		return segmentTerminator;
 	}
 
-	public void setSegmen(char segmentTerminator) {
+	public void setSegmentTerminator(char segmentTerminator) {
 		this.segmentTerminator = segmentTerminator;
 	}
 

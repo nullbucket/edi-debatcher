@@ -1,6 +1,7 @@
 package org.null0.edi.debatcher;
 
 import java.io.BufferedWriter;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -30,62 +31,64 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Debatcher {
-
 	private static final Logger logger = LoggerFactory.getLogger(Debatcher.class);
 	
-	// TODO: These are specific to claims (837). We could decouple them a bit more.
-	private static final int hlBillProvLevelCode = 20;
-	private static final int hlSubscriberLevelCode = 22;	
-	private CLAIM_TYPE claimType;
+	// Class Invariants (CTOR)
+	// -----------------------
+	private Config config; // injected by greedy CTOR
+	private EdiValidator ediValidator; // injected by greedy CTOR
+	private MetadataLogger metadataLogger; // injected by greedy CTOR
+	private Delimiters delimiters;
 
-	private Config config;
-	private MetadataLogger metadataLogger;
-	private EdiValidator ediValidator;
-	private Delimiters delimiters = new Delimiters();
-
-	private InputStream inputStream;
-	private String[] segments = null;
-	private int segmentIndex = 0;
-	private boolean fileReadCompleted = false;
-	private boolean isEndOfFile = false;
-	private boolean isIeaFound = false;
-
-	private boolean lastDataChunkReturned = false;
-	private boolean initialFileValidation = false;
-	private boolean checkForRefD9 = false;
-	private String lastPartialSegment = "";
+	// Initialized in public debatch(...) method
+	// -----------------------------------------------
+	private boolean needToUpdateTransactionId; // reset for each call
+	private String transactionId; // from input param
+	private InputStream inputStream; // from input param
+	private long batchIdMetadata; // from input param
+	private Map<String, Long> claimIdMap = new HashMap<String, Long>(); // output param
+	private StringBuffer headerBuffer;
+	private StringBuffer claimBuffer;
+	
+	// Internal state
+	private String[] segments;
+	private int segmentIndex;
+	private boolean fileReadCompleted;
+	private boolean isEndOfFile;
+	private boolean isIeaFound;
+	private boolean lastDataChunkReturned;
+	private boolean initialFileValidation;
+	private boolean checkForRefD9;
+	private String lastPartialSegment;
 	private String fieldDlm;
 	private String segmentDlm;
 	private String isaSegment;
 	private String gsSegment;
-	private StringBuffer headerBuffer = new StringBuffer();
-	private StringBuffer claimBuffer = new StringBuffer();
 	private String st02;
 	private String gs06;
 	private String isa13;
 	private String clm01; // TODO: specific to claims (873). We could decouple a bit more.
 	private String clm05; // TODO: specific to claims (873). We could decouple a bit more. 
-	private String url;
 	private int isaCnt = 0;
 	private int gsCnt;
 	private int stCnt;
 	private int hlCnt;
 	private int claimCnt = 0;
 	private int segmentCnt = 0;
-	private long batchIdMetadata;
 	private long isaIdMetadata;
 	private long gsIdMetadata;
 	private long stIdMetadata;
 	private long hlIdMetadata;
-	private String transactionId;
-	private Stack<HierarchicalLevel> hlStack = null;
+	private Stack<HierarchicalLevel> hlStack;
 	private Set<String> segmentsBeforeRefD9ForP; // TODO: specific to claims (873). We could decouple a bit more. 
 	private Set<String> segmentsBeforeRefD9ForI; // TODO: specific to claims (873). We could decouple a bit more. 
-	private String segment = null;
-	private String outputLocation;
-	private Map<String, Long> claimIdMap = new HashMap<String, Long>();
-	private boolean updateTransactionId = true;
+	private String segment;
 
+	// TODO: These are specific to claims (837). We could decouple them a bit more.
+	private static final int hlBillProvLevelCode = 20;
+	private static final int hlSubscriberLevelCode = 22;	
+	private CLAIM_TYPE claimType;
+	
 	public Debatcher() {
 		this (new ConfigDefault(), new EdiValidatorDefault(false), new MetadataLoggerDefault());
 	}
@@ -94,8 +97,9 @@ public class Debatcher {
 		this.config = config;
 		this.ediValidator = ediValidator;
 		this.metadataLogger = metadataLogger;
-		this.outputLocation = this.config.getOutputDirectory().toString();		
-		this.updateTransactionId = this.config.willUpdateTransactionId();
+		this.delimiters = new Delimiters();
+		headerBuffer = new StringBuffer();
+		claimBuffer = new StringBuffer();
 	}
 
 	public void debatch(String transactionId, InputStream inputStream) throws Exception {
@@ -104,20 +108,45 @@ public class Debatcher {
 
 	public Map<String, Long> debatch(String transactionId, long batchIdMetadata, InputStream inputStream) throws Exception {
 		logger.info("debatching started..." + transactionId);
+		
+		// Input parameters
 		if (inputStream == null) {
 			final String msg = "Null input stream, nothing to do!";
 			logger.error(msg);
 			throw new NullPointerException(msg);
 		}
-		
+		this.inputStream = inputStream;		
 		this.transactionId = transactionId;
-		this.inputStream = inputStream;
+		this.needToUpdateTransactionId = config.willUpdateTransactionId();
 		this.batchIdMetadata = batchIdMetadata < 0 ? this.metadataLogger.logBatchSubmissionData(transactionId) : batchIdMetadata;
 		
+		// Initialize debatch session state
+		segmentIndex = 0;	
+		fileReadCompleted = false;
+		isEndOfFile = false; // is this the same as fileReadCompleted?		
+		isIeaFound = false;
+		lastDataChunkReturned = false;
+		initialFileValidation = false;
+		checkForRefD9 = false;
+		lastPartialSegment = "";
+		isaCnt = 0;
+		claimCnt = 0;
+		segmentCnt = 0;
+		segment = null;
+		
+		 // Let's go down the rabbit hole...
 		readInterchangeControls();
 		
+		// Clean up
 		inputStream.close(); // TODO: Why are we closing a stream we do not own? Shouldn't that be the responsibility of the caller that passed it in?
+		headerBuffer.setLength(0);
+		claimBuffer.setLength(0);
+		
 		return claimIdMap;
+	}
+	
+	public Config getConfig() {
+		return config;
 	}
 
 	private void readInterchangeControls() throws Exception {
@@ -141,9 +170,9 @@ public class Debatcher {
 
 			isaIdMetadata = metadataLogger.logIsaData(batchIdMetadata, isa13, isaSegment);
 			String isa06 = readField(segment, 6);
-			if (updateTransactionId) {
+			if (needToUpdateTransactionId) {
 				transactionId = isa06.trim() + transactionId;
-				updateTransactionId = false;
+				needToUpdateTransactionId = false;
 			}
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA06, isa06, null);
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA07, readField(segment, 7), null);
@@ -158,7 +187,8 @@ public class Debatcher {
 
 			gsCnt = 0;
 
-			readFuntionGroups();
+			 // Let's go down the rabbit hole...
+			readFunctionGroups();
 
 			metadataLogger.updateIsaData(isaIdMetadata, gsCnt);
 
@@ -179,11 +209,10 @@ public class Debatcher {
 						batchIdMetadata);
 			}
 		}
-
 		metadataLogger.updateBatchSubmissionData(batchIdMetadata, isaCnt);
 	}
 
-	private void readFuntionGroups() throws Exception {
+	private void readFunctionGroups() throws Exception {
 		boolean readGsSegment = false;
 		while (true) {
 			getNextSegment();
@@ -203,15 +232,16 @@ public class Debatcher {
 			gs06 = readField(segment, 6);
 
 			gsSegment = segment;
-
 			gsIdMetadata = metadataLogger.logGsData(isaIdMetadata, gs06, gsSegment);
-
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS01, readField(gsSegment, 1), null);
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS08, readField(gsSegment, 8), null);
 
 			stCnt = 0;
 			getNextSegment();
+			
+			 // Let's go down the rabbit hole...
 			readTransactionSets();
+			
 			if (!"GE".equals(readField(segment, 0))) {
 				// throw new Exception("Missing GE segment");
 				ediValidator.validate(batchIdMetadata, X12_ELEMENT.GE, null, null);
@@ -223,7 +253,6 @@ public class Debatcher {
 				ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS06, gs06, ge02);
 			}
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GE01, readField(segment, 1), String.valueOf(stCnt));
-
 			metadataLogger.updateGsData(gsIdMetadata, stCnt);
 		}
 	}
@@ -248,7 +277,7 @@ public class Debatcher {
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ST01, st01, null);
 
 			st02 = readField(segment, 2);
-			claimType = getClaimType(segment);
+			claimType = getClaimType(segment); // TODO: claim (837)-specific
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ST03, readField(segment, 3), claimType.name());
 
 			hlCnt = 0;
@@ -258,8 +287,11 @@ public class Debatcher {
 
 			// TODO: This logic is specific to claims (837). We could decouple this a bit more.
 			if ("837".equals(st01) && CLAIM_TYPE.OTH != claimType) {
-				readHeader();
+				readHeader();				
+				
+				// Let's go down the rabbit hole...
 				readHierarchicalLevels();
+				
 			} else {
 				// Not a valid claim. For implementation revisit this section later.
 			}
@@ -300,8 +332,6 @@ public class Debatcher {
 	}
 
 	private void readHierarchicalLevels() throws Exception {
-
-		// while(true)
 		while (!isEndOfFile) {
 			if ("HL".equals(readField(segment, 0))) {
 				hlCnt++;
@@ -346,6 +376,7 @@ public class Debatcher {
 			segmentCnt++;
 
 			if ("CLM".equals(readField(segment, 0))) {
+				// Let's go down the rabbit hole...
 				readClaim();
 				return;
 			}
@@ -377,14 +408,14 @@ public class Debatcher {
 				fileReadCompleted = true;
 			}
 		}
-
-		// logger.debug("Segment: "+segment);
+		// logger.debug("Segment: {}", segment);
 	}
 
 	private void getDataChunk() throws Exception {
 		if (isEndOfFile) {
-			logger.error("Unexpected end of file while attempting to get next segment");
-			throw new Exception("Unexpected end of file while attempting to read more segments");
+			final String msg = "Unexpected end of file while attempting to get next data chunk"; 
+			logger.error(msg);
+			throw new EOFException(msg);
 		}
 
 		byte[] dataChunk = new byte[config.getBufferSize()]; // chunks
@@ -400,7 +431,7 @@ public class Debatcher {
 			}
 
 			// Data buffer must contain complete segments, no partials
-			data = this.lastPartialSegment + new String(dataChunk, 0, bytesRead);
+			data = lastPartialSegment + new String(dataChunk, 0, bytesRead);
 			if (bytesRead < config.getBufferSize()) {
 				this.lastDataChunkReturned = true;
 			}
@@ -409,7 +440,7 @@ public class Debatcher {
 		isEndOfFile = (bytesRead == -1);
 
 		// If this is our very first chunk, do some validation and initialization
-		if (!this.initialFileValidation) {
+		if (!initialFileValidation) {
 			if (!"ISA".equals(data.substring(0, 3))) {
 				throw new DebatcherException (
 						"Not a valid Interchange Segment",
@@ -418,7 +449,7 @@ public class Debatcher {
 						ERROR_LEVEL.Batch,
 						batchIdMetadata);
 			}
-			this.initialFileValidation = true;
+			initialFileValidation = true;
 			fieldDlm = data.substring(103, 104);
 			segmentDlm = data.substring(105, 106);
 			
@@ -506,22 +537,20 @@ public class Debatcher {
 			segmentCnt++;
 
 			if ("".equals(segment)) {
-				return;
+				return;  // exit recursion
 			}
 
-			if ("CLM".equals(readField(segment, 0)) || "SE".equals(readField(segment, 0))
-					|| "HL".equals(readField(segment, 0))) {
-				writeClaim();
-
+			if ("CLM".equals(readField(segment, 0)) || "SE".equals(readField(segment, 0)) || "HL".equals(readField(segment, 0))) {		
+				writeClaim(); // output, possible end to recursion
 				if ("HL".equals(readField(segment, 0))) {
+					// Let's go down the rabbit hole... (indirect recursion)
 					readHierarchicalLevels();
 				}
-
 				if ("CLM".equals(readField(segment, 0))) {
+					// Let's go down the rabbit hole... (direct recursion)
 					readClaim();
 				}
-
-				return;
+				return; // exit recursion
 			}
 		}
 	}
@@ -529,7 +558,7 @@ public class Debatcher {
 	// TODO: roughly a third of this method is specific to claims (837), the rest is generic (concerned with EDI envelopes) 
 	private void writeClaim() throws Exception {
 		String splitEncounterName = transactionId + "_" + String.format("%05d", claimCnt) + ".edi.txt";
-		url = outputLocation + splitEncounterName;
+		String url = this.config.getOutputDirectory().toString() + splitEncounterName;
 		File statText = new File(url);
 		FileOutputStream os = new FileOutputStream(statText);
 		OutputStreamWriter osw = new OutputStreamWriter(os);
@@ -579,13 +608,13 @@ public class Debatcher {
 			String firstElement = readField(segment, 0);
 			String secondElement = readField(segment, 1);
 
-			/*
-			 * if("HI".equals(firstElement)) { //This check is not necessary but just to
+			// TODO: is this dead code?
+			/* if("HI".equals(firstElement)) { //This check is not necessary but just to
 			 * make sure REF*D9 is added before the HI segment. //If the control comes this
 			 * far then segmentsBeforeRefD9ForP and segmentsBeforeRefD9ForI need to be
 			 * updated with the correct segments. return true; }
 			 */
-
+			
 			if ("REF".equals(firstElement) && "D9".equals(secondElement)) {
 				segment = null; // Ignore the existing REF*D9
 				return true; // The current segment is REF*D9.
@@ -606,9 +635,7 @@ public class Debatcher {
 					}
 				}
 			}
-
 		}
-
 		return false;
 	}
 
@@ -624,7 +651,6 @@ public class Debatcher {
 		}
 		return false;
 	}
-
 
 	private CLAIM_TYPE getClaimType(String segment) {
 		if (readField(segment, 3).startsWith("005010X222")) {

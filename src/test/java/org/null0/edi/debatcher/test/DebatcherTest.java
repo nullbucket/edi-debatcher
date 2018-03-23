@@ -23,11 +23,6 @@ public class DebatcherTest {
 	public void setUp() throws Exception {
 		DebatcherTest.debatcher = new Debatcher();
 	}
-	// TODO: FIX THIS. Tests were commented out... not good. Get these tests working
-	// again.
-	// Ignored because of new code implementation where we need to have idBatch
-	// value in Submission table. So, test cases will fail when there is no entry in
-	// submission table.
 
 	@Test(expected=NullPointerException.class)
 	public void test_00() throws Exception {

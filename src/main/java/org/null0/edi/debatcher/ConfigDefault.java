@@ -28,12 +28,12 @@ public class ConfigDefault implements Config {
 	private static final Logger LOG = LoggerFactory.getLogger(Config.class); // Logger
 	
 	private Properties properties;
-	private ConfigurationSource mode;
 	
 	// Configuration Values from debatcher.properties
 	private Path outDir;
 	private int bufferSize;
 	private boolean willUpdateTransactionId;
+	private boolean willRejectOnValidationError;
 	private String[] validSendersISA06;
 	private String[] validReceiversISA08;
 
@@ -52,15 +52,9 @@ public class ConfigDefault implements Config {
 	}
 	
 	public ConfigDefault (String file) throws Exception {
-		this.mode = ConfigurationSource.EXTERNAL_PROPERTIES;
 		initFromFile(file);		
 		setProperties();
 	}	
-	
-	@Override
-	public ConfigurationSource getConfigurationSource() {
-		return this.mode;		
-	}
 	
 	@Override
 	public Path getOutputDirectory()  {
@@ -73,6 +67,16 @@ public class ConfigDefault implements Config {
 	}
 	
 	@Override
+	public boolean willUpdateTransactionId() {
+		return willUpdateTransactionId;
+	}
+	
+	@Override
+	public boolean willRejectOnValidationError() {
+		return willRejectOnValidationError;
+	}
+	
+	@Override
 	public String[] getValidSenders() {
 		return validSendersISA06;
 	}
@@ -82,11 +86,6 @@ public class ConfigDefault implements Config {
 		return validReceiversISA08;
 	}
 
-	@Override
-	public boolean willUpdateTransactionId() {
-		return willUpdateTransactionId;
-	}
-	
 	private void setProperties() throws Exception {
 		this.bufferSize = Integer.parseInt(this.properties.getProperty("buffer_size"));
 		this.outDir = toPath(this.properties.getProperty("output_directory"));		
@@ -101,23 +100,27 @@ public class ConfigDefault implements Config {
 	}
 	
 	private boolean initFromEnvVar() {
-		this.mode = ConfigurationSource.ENVIRONMENT_VARIABLE;
 		String envVarValue = System.getenv(ENVAR_NAME);
-		return envVarValue == null ? false : initFromFile(envVarValue);
+		if (!StringUtils.isAllBlank(envVarValue)) {
+			if (initFromFile(envVarValue)) {
+				LOG.info("Loaded properties from file '{}' specified by environment variable {}.", envVarValue, ENVAR_NAME);
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	private boolean initFromLocal() {
-		this.mode = ConfigurationSource.LOCAL_PROPERTIES;
 		try {
 			this.properties = this.getPropertiesFromResource();
 		} catch (IOException e) {
+			LOG.info("Loaded properties from local (embedded) resource '{}'.", FILE_NAME);
 			return false;
 		}
 		return true;
 	}
 	
 	private boolean initFromFile(String path) {
-		this.mode = ConfigurationSource.EXTERNAL_PROPERTIES;
 		try {
 			Properties p  = getPropertiesFromFile(path);
 			if (p == null) {
@@ -127,12 +130,11 @@ public class ConfigDefault implements Config {
 		} catch (IOException e) {
 			return false;
 		}
+		LOG.info("Loaded properties from file '{}'.", path);
 		return true;
 	}
 	
 	private void initFromFailover() {
-		this.mode = ConfigurationSource.FAILOVER;
-		
 		final int DEFAULT_BUFFER_SIZE = 1024;
 		this.bufferSize = DEFAULT_BUFFER_SIZE;
 		
@@ -181,4 +183,5 @@ public class ConfigDefault implements Config {
 		}
 		return p;
 	}
+
 }

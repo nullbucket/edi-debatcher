@@ -1,7 +1,6 @@
 package org.null0.edi.debatcher;
 
 import java.io.BufferedWriter;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -17,16 +16,13 @@ import java.util.Stack;
 
 import org.apache.commons.lang3.StringUtils;
 import org.null0.edi.debatcher.DebatcherException.ERROR_LEVEL;
-import org.null0.edi.debatcher.Delimiters.EdiWrapStyle;
 import org.null0.edi.debatcher.interfaces.EdiValidator;
 import org.null0.edi.debatcher.interfaces.EdiValidator.CLAIM_TYPE;
 import org.null0.edi.debatcher.interfaces.EdiValidator.ERROR;
 import org.null0.edi.debatcher.interfaces.EdiValidator.X12_ELEMENT;
 import org.null0.edi.debatcher.interfaces.Config;
 import org.null0.edi.debatcher.interfaces.MetadataLogger;
-import org.null0.edi.debatcher.MetadataLoggerDefault;
 import org.null0.edi.debatcher.EdiValidatorDefault;
-import org.null0.edi.debatcher.ConfigDefault;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +38,8 @@ public class Debatcher {
 	private Config config; // injected by greedy CTOR
 	private EdiValidator ediValidator; // injected by greedy CTOR
 	private MetadataLogger metadataLogger; // injected by greedy CTOR
-	private Delimiters delimiters;
+	private Delimiters delimiters; // internal
+	private SegmentReader segmentReader; // internal
 
 	// Initialized in public debatch(...) method
 	// -----------------------------------------------
@@ -55,17 +52,7 @@ public class Debatcher {
 	private StringBuffer claimBuffer;
 	
 	// Internal state
-	private String[] segments;
-	private int segmentIndex;
-	private boolean fileReadCompleted;
-	private boolean isEndOfFile;
-	private boolean isIeaFound;
-	private boolean lastDataChunkReturned;
-	private boolean initialFileValidation;
 	private boolean checkForRefD9;
-	private String lastPartialSegment;
-	private String fieldDlm;
-	private String segmentDlm;
 	private String isaSegment;
 	private String gsSegment;
 	private String st02;
@@ -73,12 +60,12 @@ public class Debatcher {
 	private String isa13;
 	private String clm01; // TODO: specific to claims (873). Decouple.
 	private String clm05; // TODO: specific to claims (873). Decouple. 
-	private int isaCnt = 0;
+	private int isaCnt;
 	private int gsCnt;
 	private int stCnt;
 	private int hlCnt;
-	private int claimCnt = 0;  // TODO: specific to claims (837). Decouple.
-	private int segmentCnt = 0;
+	private int claimCnt;  // TODO: specific to claims (837). Decouple.
+	private int segmentCnt;
 	private long isaIdMetadata;
 	private long gsIdMetadata;
 	private long stIdMetadata;
@@ -86,13 +73,8 @@ public class Debatcher {
 	private Stack<HierarchicalLevel> hlStack;
 	private Set<String> segmentsBeforeRefD9ForP; // TODO: specific to claims (873). Decouple. 
 	private Set<String> segmentsBeforeRefD9ForI; // TODO: specific to claims (873). Decouple. 
-	private String segment;	 	
 	private CLAIM_TYPE claimType; // TODO: specific to claims (837). Decouple.
 	
-	public Debatcher() {
-		this (new ConfigDefault(), new EdiValidatorDefault(new ConfigDefault()), new MetadataLoggerDefault());
-	}
-
 	public Debatcher(Config config, EdiValidator ediValidator, MetadataLogger metadataLogger) {
 		this.config = config;
 		this.ediValidator = ediValidator;
@@ -120,20 +102,13 @@ public class Debatcher {
 		this.needToUpdateTransactionId = config.willUpdateTransactionId();
 		this.batchIdMetadata = batchIdMetadata < 0 ? this.metadataLogger.logBatchSubmissionData(transactionId) : batchIdMetadata;
 		
-		// Initialize debatch session state
-		segmentIndex = 0;	
-		fileReadCompleted = false;
-		isEndOfFile = false; // is this the same as fileReadCompleted?		
-		isIeaFound = false;
-		lastDataChunkReturned = false;
-		initialFileValidation = false;
+		// Initialize debatcher session state
+		this.segmentReader = new SegmentReader(this.config, this.delimiters, this.inputStream, this.batchIdMetadata);
 		checkForRefD9 = false;
-		lastPartialSegment = "";
 		isaCnt = 0;
 		claimCnt = 0;
-		segmentCnt = 0;
-		segment = null;
-		
+		segmentCnt = 0;	
+
 		 // Let's go down the rabbit hole...
 		readInterchangeControls();
 		
@@ -150,8 +125,8 @@ public class Debatcher {
 	}
 
 	private void readInterchangeControls() throws Exception {
-		while (!fileReadCompleted) {
-			getNextSegment();
+		while (!segmentReader.fileReadCompleted()) {
+			String segment = segmentReader.next();
 			
 			if (StringUtils.isAllBlank(segment)) {
 				logger.warn("Ignoring unexpected whitespace.");
@@ -164,26 +139,26 @@ public class Debatcher {
 			}*/
 			
 			isaSegment = segment.replaceAll("\\r|\\n", "");
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.DATA_SEPARATOR, fieldDlm, null);
-			isa13 = readField(segment, 13);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.DATA_SEPARATOR, String.valueOf(delimiters.getField()), null);
+			isa13 = segmentReader.field(13);
 			isaCnt++;
 
 			isaIdMetadata = metadataLogger.logIsaData(batchIdMetadata, isa13, isaSegment);
-			String isa06 = readField(segment, 6);
+			String isa06 = segmentReader.field(6);
 			if (needToUpdateTransactionId) {
 				transactionId = isa06.trim() + transactionId;
 				needToUpdateTransactionId = false;
 			}
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA06, isa06, null);
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA07, readField(segment, 7), null);
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA08, readField(segment, 8), null);
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA11, readField(segment, 11), null);
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA12, readField(segment, 12), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA07, segmentReader.field(7), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA08, segmentReader.field(8), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA11, segmentReader.field(11), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA12, segmentReader.field(12), null);
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA13, isa13, null);
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA14, readField(segment, 14), null);
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA15, readField(segment, 15), null);
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA16, readField(segment, 16), null);
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISAEnd, segmentDlm, null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA14, segmentReader.field(14), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA15, segmentReader.field(15), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISA16, segmentReader.field(16), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ISAEnd, String.valueOf(delimiters.getSegmentTerminator()), null);
 
 			gsCnt = 0;
 
@@ -192,14 +167,14 @@ public class Debatcher {
 
 			metadataLogger.updateIsaData(isaIdMetadata, gsCnt);
 
-			if (!"IEA".equals(readField(segment, 0))) {
+			if (!"IEA".equals(segmentReader.field(0))) {
 				// throw new Exception("Missing IEA segment");
 				ediValidator.validate(batchIdMetadata, X12_ELEMENT.IEA01, null, null);
 			}
 
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.IEA01, readField(segment, 1), String.valueOf(gsCnt));
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.IEA01, segmentReader.field(1), String.valueOf(gsCnt));
 
-			String iea02 = readField(segment, 2);
+			String iea02 = segmentReader.field(2);
 			if (!isa13.equals(iea02)) {
 				logger.error("ISA13 {} & IEA02 {} don't match", isa13, iea02);
 				throw new DebatcherException("ISA13 & IEA02 don't match",
@@ -215,51 +190,51 @@ public class Debatcher {
 	private void readFunctionGroups() throws Exception {
 		boolean readGsSegment = false;
 		while (true) {
-			getNextSegment();
+			String segment = segmentReader.next();
 
 			if (!readGsSegment) {
-				if (!"GS".equals(readField(segment, 0))) {
+				if (!"GS".equals(segmentReader.field(0))) {
 					ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS, null, null);
 				}
 				readGsSegment = true;
 			}
 
-			if ("IEA".equals(readField(segment, 0)) || "".equals(segment)) {
+			if ("IEA".equals(segmentReader.field(0)) || "".equals(segment)) {
 				return;
 			}
 			gsCnt++;
 
-			gs06 = readField(segment, 6);
+			gs06 = segmentReader.field(6);
 
 			gsSegment = segment;
 			gsIdMetadata = metadataLogger.logGsData(isaIdMetadata, gs06, gsSegment);
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS01, readField(gsSegment, 1), null);
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS08, readField(gsSegment, 8), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS01, segmentReader.field(1), null);
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS08, segmentReader.field(8), null);
 
 			stCnt = 0;
-			getNextSegment();
+			segmentReader.next();
 			
 			 // Let's go down the rabbit hole...
 			readTransactionSets();
 			
-			if (!"GE".equals(readField(segment, 0))) {
+			if (!"GE".equals(segmentReader.field(0))) {
 				// throw new Exception("Missing GE segment");
 				ediValidator.validate(batchIdMetadata, X12_ELEMENT.GE, null, null);
 			}
-			String ge02 = readField(segment, 2);
+			String ge02 = segmentReader.field(2);
 			if (!gs06.equals(ge02)) {
 				logger.error("GS06 {} & GE02 {} don't match", gs06, ge02);
 				// throw new Exception("GS06 & GE02 don't match");
 				ediValidator.validate(batchIdMetadata, X12_ELEMENT.GS06, gs06, ge02);
 			}
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GE01, readField(segment, 1), String.valueOf(stCnt));
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.GE01, segmentReader.field(1), String.valueOf(stCnt));
 			metadataLogger.updateGsData(gsIdMetadata, stCnt);
 		}
 	}
 
 	private void readTransactionSets() throws Exception {
 		while (true) {
-			if (!"ST".equals(readField(segment, 0))) {
+			if (!"ST".equals(segmentReader.field(0))) {
 				throw new DebatcherException ("Missing ST segment",
 						EdiValidatorDefault.IK3_999_ERROR_MISS_SEG,
 						ERROR.TYPE_999,
@@ -272,16 +247,16 @@ public class Debatcher {
 			hlStack = new Stack<HierarchicalLevel>(); // Reset the HL Stack for each transaction set.
 			headerBuffer = new StringBuffer(); // Reset the header buffer.
 
-			String st01 = readField(segment, 1);
+			String st01 = segmentReader.field(1);
 
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ST01, st01, null);
 
-			st02 = readField(segment, 2);
-			claimType = getClaimType(segment); // TODO: claim (837)-specific
-			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ST03, readField(segment, 3), claimType.name());
+			st02 = segmentReader.field(2);
+			claimType = getClaimType(segmentReader.current()); // TODO: claim (837)-specific
+			ediValidator.validate(batchIdMetadata, X12_ELEMENT.ST03, segmentReader.field(3), claimType.name());
 
 			hlCnt = 0;
-			stIdMetadata = metadataLogger.logStData(gsIdMetadata, st02, segment.trim());
+			stIdMetadata = metadataLogger.logStData(gsIdMetadata, st02, segmentReader.current().trim());
 
 			initializeObjects();
 
@@ -296,14 +271,14 @@ public class Debatcher {
 				// Not a valid claim. For implementation revisit this section later.
 			}
 
-			if (isIeaFound || readField(segment, 0).equals("SE")) {
-				ediValidator.validate(batchIdMetadata, X12_ELEMENT.SE, readField(segment, 0), null);
-				ediValidator.validate(batchIdMetadata, X12_ELEMENT.SE01, readField(segment, 1), String.valueOf(segmentCnt));
+			if (segmentReader.isIeaFound() || segmentReader.field(0).equals("SE")) {
+				ediValidator.validate(batchIdMetadata, X12_ELEMENT.SE, segmentReader.field(0), null);
+				ediValidator.validate(batchIdMetadata, X12_ELEMENT.SE01, segmentReader.field(1), String.valueOf(segmentCnt));
 			} else { // If the SE segment is missing but the IEA segment is also missing, then treat as missing IEA.
 				ediValidator.validate(batchIdMetadata, X12_ELEMENT.IEA01, null, null);
 			}
 
-			String se02 = readField(segment, 2);
+			String se02 = segmentReader.field(2);
 			if (!st02.equals(se02)) {
 				logger.error("ST02 {} & SE02 {} don't match", st02, se02);
 				// throw new Exception ("ST02 & SE02 don't match");
@@ -312,9 +287,9 @@ public class Debatcher {
 
 			metadataLogger.updateStData(stIdMetadata, hlCnt);
 
-			getNextSegment();
+			segmentReader.next();
 
-			if ("GE".equals(readField(segment, 0)) || !"ST".equals(readField(segment, 0))) {
+			if ("GE".equals(segmentReader.field(0)) || !"ST".equals(segmentReader.field(0))) {
 				return;
 			}
 		}
@@ -322,26 +297,27 @@ public class Debatcher {
 
 	private void readHeader() throws Exception {
 		while (true) {
-			headerBuffer.append(segment).append(segmentDlm);
-			getNextSegment();
+			headerBuffer.append(segmentReader.current()).append(delimiters.getSegmentTerminator());
+			segmentReader.next();
 			segmentCnt++;
-			if ("HL".equals(readField(segment, 0))) {
+			if ("HL".equals(segmentReader.field(0))) {
 				return;
 			}
 		}
 	}
 
 	private void readHierarchicalLevels() throws Exception {
-		while (!isEndOfFile) {
-			if ("HL".equals(readField(segment, 0))) {
+		while (!segmentReader.isEOF()) {
+			String segment = segmentReader.current();
+			if ("HL".equals(segmentReader.field(0))) {
 				hlCnt++;
 
 				HierarchicalLevel hl = new HierarchicalLevel();
-				hl.setId(Integer.parseInt(readField(segment, 1)));
-				hl.setLevelCode(Integer.parseInt(readField(segment, 3)));
-				hl.setChildcode(Integer.parseInt(readField(segment, 4)));
+				hl.setId(Integer.parseInt(segmentReader.field(1)));
+				hl.setLevelCode(Integer.parseInt(segmentReader.field(3)));
+				hl.setChildcode(Integer.parseInt(segmentReader.field(4)));
 
-				hlIdMetadata = metadataLogger.logHlData(stIdMetadata, hl.getId(), hl.getLevelCode(), readField(segment, 2));
+				hlIdMetadata = metadataLogger.logHlData(stIdMetadata, hl.getId(), hl.getLevelCode(), segmentReader.field(2));
 
 				if (hl.getLevelCode() == hlBillProvLevelCode) {
 					hl.setId(1);
@@ -353,8 +329,8 @@ public class Debatcher {
 					hl.setId(3);
 					hl.setParentId(2);
 				}
-				segment = "HL" + fieldDlm + hl.getId() + fieldDlm + (hl.getParentId() == 0 ? "" : hl.getParentId())
-						+ fieldDlm + hl.getLevelCode() + fieldDlm + hl.getChildcode();
+				segment = "HL" + delimiters.getField() + hl.getId() + delimiters.getField() + (hl.getParentId() == 0 ? "" : hl.getParentId())
+						+ delimiters.getField() + hl.getLevelCode() + delimiters.getField() + hl.getChildcode();
 
 				while (true) {
 					if (hlStack.size() > 0) {
@@ -370,19 +346,19 @@ public class Debatcher {
 				hlStack.push(hl);
 			}
 
-			hlStack.peek().getHlDataBuffer().append(segment).append(segmentDlm);
+			hlStack.peek().getHlDataBuffer().append(segment).append(delimiters.getSegmentTerminator());
 
-			getNextSegment();
+			segmentReader.next();
 			segmentCnt++;
 
-			if ("CLM".equals(readField(segment, 0))) {
+			if ("CLM".equals(segmentReader.field(0))) {
 				// Let's go down the rabbit hole...
 				readClaim();
 				return;
 			}
 		}
 
-		if (isIeaFound) {
+		if (segmentReader.isIeaFound()) {
 			// throw new DebatcherException("Missing CLM segment",
 			// EdiValidatorDefault.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999,
 			// ERROR_LEVEL.Batch, batchIdMetadata, ERROR_OR_EXCEPTION.Exception);
@@ -392,107 +368,12 @@ public class Debatcher {
 		}
 	}
 
-	private void getNextSegment() throws Exception {
-		if (segments == null) {
-			getDataChunk();
-		}
-		segment = segments[segmentIndex];
-		if (readField(segment, 0).equals("IEA")) {
-			isIeaFound = true;
-		}
-		segmentIndex++;
-		if (segments.length == segmentIndex) {
-			segmentIndex = 0;
-			segments = null;
-			if (lastDataChunkReturned) {
-				fileReadCompleted = true;
-			}
-		}
-		// logger.debug("Segment: {}", segment);
-	}
-
-	private void getDataChunk() throws Exception {
-		if (isEndOfFile) {
-			final String msg = "Unexpected end of file while attempting to get next data chunk"; 
-			logger.error(msg);
-			throw new EOFException(msg);
-		}
-
-		byte[] dataChunk = new byte[config.getBufferSize()]; // chunks
-		String data = ""; // data buffer
-		int bytesRead = 0;
-		boolean lastDataChunkEndsWithSgmtDlm = false;
-
-		// Read chunks into data buffer
-		while ((bytesRead = inputStream.read(dataChunk)) != -1) {
-			// If first time reading data, determine EDI Wrapping Style
-			if (delimiters.getLineWrap() == EdiWrapStyle.Unknown) {
-				delimiters.setLineWrap(dataChunk, bytesRead);
-			}
-
-			// Data buffer must contain complete segments, no partials
-			data = lastPartialSegment + new String(dataChunk, 0, bytesRead);
-			if (bytesRead < config.getBufferSize()) {
-				this.lastDataChunkReturned = true;
-			}
-			break;
-		}
-		isEndOfFile = (bytesRead == -1);
-
-		// If this is our very first chunk, do some validation and initialization
-		if (!initialFileValidation) {
-			if (!"ISA".equals(data.substring(0, 3))) {
-				throw new DebatcherException (
-						"Not a valid Interchange Segment",
-						EdiValidatorDefault.TA1_ERROR_ISAIEA,
-						ERROR.TYPE_TA1,
-						ERROR_LEVEL.Batch,
-						batchIdMetadata);
-			}
-			initialFileValidation = true;
-			fieldDlm = data.substring(103, 104);
-			segmentDlm = data.substring(105, 106);
-			
-			if (segmentDlm.equals("\n") || segmentDlm.equals("\r")) {
-				// If segment terminator is a line-wrap char itself, then no wrapping is necessary
-				delimiters.setLineWrap(EdiWrapStyle.Unwrapped);
-			}
-			logger.debug("field and segment delimiter are {} & {}", fieldDlm, segmentDlm);
-		}
-
-		if (data.endsWith(segmentDlm)) {
-			lastDataChunkEndsWithSgmtDlm = true;
-		}
-
-		segments = data.split(java.util.regex.Pattern.quote(segmentDlm));
-		lastPartialSegment = segments[segments.length - 1];
-
-		if (lastDataChunkEndsWithSgmtDlm) {
-			lastPartialSegment = "";
-		}
-
-		// if(!lastDataChunkReturned){
-		if (!lastDataChunkReturned && !lastDataChunkEndsWithSgmtDlm) {
-			// segments = ArrayUtils.removeElement(segments, lastPartialSegment);
-			segments = Arrays.copyOf(segments, segments.length - 1);
-		}
-	}
-
-	private String readField(String segment, int position) {
-		String[] data = segment.split("\\" + fieldDlm);
-		if (data.length > position) {
-			String field = data[position];
-			return field.replaceAll("\\r|\\n", "");
-		}
-		return null;
-	}
-
 	private int getSegmentCount(String str) {
-		return StringUtils.countMatches(str, segmentDlm);
+		return StringUtils.countMatches(str, delimiters.getSegmentTerminator());
 	}
 
 	private int getLxCount(String str) {
-		return StringUtils.countMatches(str, "LX" + fieldDlm);
+		return StringUtils.countMatches(str, "LX" + delimiters.getField());
 	}
 	
 	// TODO: Logic in these private methods below are specific to claims (837). We could decouple them a bit more.
@@ -506,47 +387,47 @@ public class Debatcher {
 		while (true) {
 			if (!addedRefD9) {
 				if (isAtRefD9()) {
-					StringBuffer refD9 = new StringBuffer("REF").append(fieldDlm)
+					StringBuffer refD9 = new StringBuffer("REF").append(delimiters.getField())
 																.append("D9")
-																.append(fieldDlm)
+																.append(delimiters.getField())
 																.append(transactionId)
 																.append("_")
 																.append(String.format("%05d", claimCnt));
 					claimBuffer.append(delimiters.getEOL())
 							   .append(refD9)
-							   .append(segmentDlm); // *** WRITE ***
+							   .append(delimiters.getSegmentTerminator()); // *** WRITE ***
 					addedRefD9 = true;
 				}
 			}
 
-			if (segment != null) {
-				claimBuffer.append(segment).append(segmentDlm);
+			if (segmentReader.current() != null) {
+				claimBuffer.append(segmentReader.current()).append(delimiters.getSegmentTerminator());
 				if (!readClmSegment) {
-					clm01 = readField(segment, 1);
+					clm01 = segmentReader.field(1);
 					if (clm01 == null || clm01.isEmpty()) {
 						ediValidator.logError(batchIdMetadata,
 								EdiValidatorDefault.IK3_999_ERROR_MISS_DATA_ELEMENT, ERROR.TYPE_999,
 								"Missing CLM01 value");
 					}
-					clm05 = readField(segment, 5);
+					clm05 = segmentReader.field(5);
 					readClmSegment = true;
 				}
 			}
 
-			getNextSegment();
+			segmentReader.next();
 			segmentCnt++;
 
-			if ("".equals(segment)) {
+			if ("".equals(segmentReader.current())) {
 				return;  // exit recursion
 			}
 
-			if ("CLM".equals(readField(segment, 0)) || "SE".equals(readField(segment, 0)) || "HL".equals(readField(segment, 0))) {		
+			if ("CLM".equals(segmentReader.field(0)) || "SE".equals(segmentReader.field(0)) || "HL".equals(segmentReader.field(0))) {		
 				writeClaim(); // output, possible end to recursion
-				if ("HL".equals(readField(segment, 0))) {
+				if ("HL".equals(segmentReader.field(0))) {
 					// Let's go down the rabbit hole... (indirect recursion)
 					readHierarchicalLevels();
 				}
-				if ("CLM".equals(readField(segment, 0))) {
+				if ("CLM".equals(segmentReader.field(0))) {
 					// Let's go down the rabbit hole... (direct recursion)
 					readClaim();
 				}
@@ -564,9 +445,9 @@ public class Debatcher {
 		OutputStreamWriter osw = new OutputStreamWriter(os);
 		Writer w = new BufferedWriter(osw);
 		w.write(isaSegment);
-		w.write(segmentDlm);
+		w.write(delimiters.getSegmentTerminator());
 		w.write(gsSegment);
-		w.write(segmentDlm);
+		w.write(delimiters.getSegmentTerminator());
 		w.write(headerBuffer.toString());
 
 		Iterator<HierarchicalLevel> iter = hlStack.iterator();
@@ -584,9 +465,9 @@ public class Debatcher {
 		int lxCnt = getLxCount(claimBuffer.toString());
 
 		String eol = delimiters.getEOL();
-		w.write(eol + "SE" + fieldDlm + (headerSegmentsCnt + hlSegmentsCount + clmSegmentsCnt + 1) + fieldDlm + st02 + segmentDlm);
-		w.write(eol + "GE" + fieldDlm + 1 + fieldDlm + gs06 + segmentDlm);
-		w.write(eol + "IEA" + fieldDlm + 1 + fieldDlm + isa13 + segmentDlm);
+		w.write(eol + "SE" + delimiters.getField() + (headerSegmentsCnt + hlSegmentsCount + clmSegmentsCnt + 1) + delimiters.getField() + st02 + delimiters.getSegmentTerminator());
+		w.write(eol + "GE" + delimiters.getField() + 1 + delimiters.getField() + gs06 + delimiters.getSegmentTerminator());
+		w.write(eol + "IEA" + delimiters.getField() + 1 + delimiters.getField() + isa13 + delimiters.getSegmentTerminator());
 
 		w.close();
 		osw.close();
@@ -605,8 +486,8 @@ public class Debatcher {
 		}
 
 		if (checkForRefD9) {
-			String firstElement = readField(segment, 0);
-			String secondElement = readField(segment, 1);
+			String firstElement = segmentReader.field(0);
+			String secondElement = segmentReader.field(1);
 
 			// TODO: is this dead code?
 			/* if("HI".equals(firstElement)) { //This check is not necessary but just to
@@ -616,11 +497,11 @@ public class Debatcher {
 			 */
 			
 			if ("REF".equals(firstElement) && "D9".equals(secondElement)) {
-				segment = null; // Ignore the existing REF*D9
+				segmentReader.setCurrent(null); // Ignore the existing REF*D9
 				return true; // The current segment is REF*D9.
 			} else {
 				if ("REF".equals(firstElement)) {
-					firstElement = firstElement + fieldDlm + secondElement;
+					firstElement = firstElement + delimiters.getField() + secondElement;
 				}
 
 				if (CLAIM_TYPE.INS == claimType) // Institutional
@@ -641,11 +522,11 @@ public class Debatcher {
 
 	private boolean canCheckForRefD9() {
 		if (CLAIM_TYPE.INS == claimType) {
-			if ("CL1".equals(readField(segment, 0))) {
+			if ("CL1".equals(segmentReader.field(0))) {
 				return true;
 			}
 		} else if (CLAIM_TYPE.PRO == claimType) {
-			if ("CLM".equals(readField(segment, 0))) {
+			if ("CLM".equals(segmentReader.field(0))) {
 				return true;
 			}
 		}
@@ -653,10 +534,10 @@ public class Debatcher {
 	}
 
 	private CLAIM_TYPE getClaimType(String segment) {
-		if (readField(segment, 3).startsWith("005010X222")) {
+		if (segmentReader.field(3).startsWith("005010X222")) {
 			return CLAIM_TYPE.PRO; // Professional
 		}
-		else if (readField(segment, 3).startsWith("005010X223")) {
+		else if (segmentReader.field(3).startsWith("005010X223")) {
 			return CLAIM_TYPE.INS; // Institutional
 		}
 		return CLAIM_TYPE.OTH; // Other
@@ -665,13 +546,13 @@ public class Debatcher {
 	private void initializeObjects() {
 		if (CLAIM_TYPE.PRO == claimType) {
 			segmentsBeforeRefD9ForP = new HashSet<String>(
-					Arrays.asList(new String[] { "CLM", "DTP", "PWK", "CN1", "AMT", "REF" + fieldDlm + "4N",
-							"REF" + fieldDlm + "F5", "REF" + fieldDlm + "EW", "REF" + fieldDlm + "9F",
-							"REF" + fieldDlm + "G1", "REF" + fieldDlm + "F8", "REF" + fieldDlm + "X4" }));
+					Arrays.asList(new String[] { "CLM", "DTP", "PWK", "CN1", "AMT", "REF" + delimiters.getField() + "4N",
+							"REF" + delimiters.getField() + "F5", "REF" + delimiters.getField() + "EW", "REF" + delimiters.getField() + "9F",
+							"REF" + delimiters.getField() + "G1", "REF" + delimiters.getField() + "F8", "REF" + delimiters.getField() + "X4" }));
 		} else if (CLAIM_TYPE.INS == claimType) {
 			segmentsBeforeRefD9ForI = new HashSet<String>(Arrays.asList(new String[] { "CL1", "PWK", "CN1", "AMT",
-					"REF" + fieldDlm + "4N", "REF" + fieldDlm + "9F", "REF" + fieldDlm + "G1", "REF" + fieldDlm + "F8",
-					"REF" + fieldDlm + "9A", "REF" + fieldDlm + "9C", "REF" + fieldDlm + "LX" }));
+					"REF" + delimiters.getField() + "4N", "REF" + delimiters.getField() + "9F", "REF" + delimiters.getField() + "G1", "REF" + delimiters.getField() + "F8",
+					"REF" + delimiters.getField() + "9A", "REF" + delimiters.getField() + "9C", "REF" + delimiters.getField() + "LX" }));
 		}
 	}
 }

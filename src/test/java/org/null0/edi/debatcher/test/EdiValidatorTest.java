@@ -20,13 +20,12 @@ public class EdiValidatorTest {
 	@Test
 	public void test_valid() throws Exception {
 		String id = "valid";
-		new Debatcher().debatch(id, openStream(id));
+		createDebatcher().debatch(id, openStream(id));
 	}
 
 	@Test
 	public void test_ISA11() throws Exception {
-		String id = "InvalidISA11"; // TODO: was this just poorly named file, or does both the test and data need to match the file name?
-		new Debatcher().debatch(id, openStream(id));
+		checkError("InvalidISA11", EdiValidator.TA1_ERROR_ISA11);
 	}
 
 	@Test

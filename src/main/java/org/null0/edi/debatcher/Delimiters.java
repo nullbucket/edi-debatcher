@@ -28,7 +28,7 @@ class Delimiters {
 		this.dataElementSeparator = dataElementSeparator;
 	}
 
-	public char getSegment() {
+	public char getSegmentTerminator() {
 		return segmentTerminator;
 	}
 

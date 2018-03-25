@@ -7,7 +7,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.null0.edi.debatcher.ConfigDefault;
 import org.null0.edi.debatcher.Debatcher;
+import org.null0.edi.debatcher.EdiValidatorDefault;
+import org.null0.edi.debatcher.MetadataLoggerDefault;
+import org.null0.edi.debatcher.interfaces.Config;
 
 public class DebatcherTest {
 	private static final Logger logger = LoggerFactory.getLogger(DebatcherTest.class);
@@ -21,7 +25,11 @@ public class DebatcherTest {
 
 	@Before
 	public void setUp() throws Exception {
-		DebatcherTest.debatcher = new Debatcher();
+		Config config = new ConfigDefault();
+		DebatcherTest.debatcher = new Debatcher(
+				config,
+				new EdiValidatorDefault(config),
+				new MetadataLoggerDefault());
 	}
 
 	@Test(expected=NullPointerException.class)

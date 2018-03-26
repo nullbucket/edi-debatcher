@@ -33,16 +33,16 @@ public class TestFileGenerator {
 			FileOutputStream os = new FileOutputStream(statText);
 			OutputStreamWriter osw = new OutputStreamWriter(os);
 			Writer w = new BufferedWriter(osw);
-			
+
 			final int BUFFER_SIZE = 1024;
 			byte[] dataChunk = new byte[BUFFER_SIZE];
-			String data;	
+			String data;
 			int bytesRead = 0;
-			
+
 			for (int i = 1; i <= repeat; i++) {
 				logger.info("REPEAT:------------->{}", i);
 				InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("files/837PFile_Large.txt");
-                while ((bytesRead = inputStream.read(dataChunk)) != -1) {
+				while ((bytesRead = inputStream.read(dataChunk)) != -1) {
 					data = new String(dataChunk, 0, bytesRead);
 					logger.info(data);
 					w.write(data);

@@ -25,11 +25,11 @@ import org.slf4j.LoggerFactory;
 
 public class Debatcher {
 	private static final Logger logger = LoggerFactory.getLogger(Debatcher.class);
-	
+
 	// TODO: These are specific to claims (837). Decouple.
 	private static final int hlBillProvLevelCode = 20;
-	private static final int hlSubscriberLevelCode = 22;	
-	
+	private static final int hlSubscriberLevelCode = 22;
+
 	// Class Invariants (CTOR)
 	// -----------------------
 	private Config config; // injected by greedy CTOR
@@ -47,7 +47,7 @@ public class Debatcher {
 	private Map<String, Long> claimIdMap = new HashMap<String, Long>(); // output param
 	private StringBuffer headerBuffer;
 	private StringBuffer claimBuffer;
-	
+
 	// Internal state
 	private boolean checkForRefD9;
 	private String isaSegment;
@@ -61,7 +61,7 @@ public class Debatcher {
 	private int gsCnt;
 	private int stCnt;
 	private int hlCnt;
-	private int claimCnt;  // TODO: specific to claims (837). Decouple.
+	private int claimCnt; // TODO: specific to claims (837). Decouple.
 	private int segmentCnt;
 	private long isaIdMetadata;
 	private long gsIdMetadata;
@@ -71,7 +71,7 @@ public class Debatcher {
 	private Set<String> segmentsBeforeRefD9ForP; // TODO: specific to claims (873). Decouple. 
 	private Set<String> segmentsBeforeRefD9ForI; // TODO: specific to claims (873). Decouple. 
 	private CLAIM_TYPE claimType; // TODO: specific to claims (837). Decouple.
-	
+
 	public Debatcher(Config config, Validator ediValidator, Metadata metadataLogger) {
 		this.config = config;
 		this.ediValidator = ediValidator;
@@ -87,36 +87,36 @@ public class Debatcher {
 
 	public Map<String, Long> debatch(String transactionId, long batchIdMetadata, InputStream inputStream) throws Exception {
 		logger.info("debatching started..." + transactionId);
-		
+
 		// Input parameters
 		if (inputStream == null) {
 			final String msg = "Null input stream, nothing to do!";
 			logger.error(msg);
 			throw new NullPointerException(msg);
 		}
-		this.inputStream = inputStream;		
+		this.inputStream = inputStream;
 		this.transactionId = transactionId;
 		this.needToUpdateTransactionId = config.willUpdateTransactionId();
 		this.batchIdMetadata = batchIdMetadata < 0 ? this.metadataLogger.logBatchSubmissionData(transactionId) : batchIdMetadata;
-		
+
 		// Initialize debatcher session state
 		this.segmentReader = new SegmentReader(this.config, this.delimiters, this.inputStream, this.batchIdMetadata);
 		checkForRefD9 = false;
 		isaCnt = 0;
 		claimCnt = 0;
-		segmentCnt = 0;	
+		segmentCnt = 0;
 
-		 // Let's go down the rabbit hole...
+		// Let's go down the rabbit hole...
 		readInterchangeControls();
-		
+
 		// Clean up
 		inputStream.close(); // TODO: Why are we closing a stream we do not own? Shouldn't that be the responsibility of the caller that passed it in?
 		headerBuffer.setLength(0);
 		claimBuffer.setLength(0);
-		
+
 		return claimIdMap;
 	}
-	
+
 	public Config getConfig() {
 		return config;
 	}
@@ -124,17 +124,17 @@ public class Debatcher {
 	private void readInterchangeControls() throws Exception {
 		while (!segmentReader.fileReadCompleted()) {
 			String segment = segmentReader.next();
-			
+
 			if (StringUtils.isAllBlank(segment)) {
 				logger.warn("Ignoring unexpected whitespace.");
 				continue;
 			}
-			
+
 			/* TODO: we should probably delete this
 			if (segment == null || segment.equals("\r\n")) {
 				throw new DebatcherException ("Invalid Control Structure", DefaultValidator.TA1_ERROR_ISAIEA, ERROR.TYPE_TA1, ERROR_LEVEL.Batch, batchIdMetadata);
 			}*/
-			
+
 			isaSegment = segment.replaceAll("\\r|\\n", "");
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.DATA_SEPARATOR, String.valueOf(delimiters.getField()), null);
 			isa13 = segmentReader.field(13);
@@ -159,7 +159,7 @@ public class Debatcher {
 
 			gsCnt = 0;
 
-			 // Let's go down the rabbit hole...
+			// Let's go down the rabbit hole...
 			readFunctionGroups();
 
 			metadataLogger.updateIsaData(isaIdMetadata, gsCnt);
@@ -210,10 +210,10 @@ public class Debatcher {
 
 			stCnt = 0;
 			segmentReader.next();
-			
-			 // Let's go down the rabbit hole...
+
+			// Let's go down the rabbit hole...
 			readTransactionSets();
-			
+
 			if (!"GE".equals(segmentReader.field(0))) {
 				// throw new Exception("Missing GE segment");
 				ediValidator.validate(batchIdMetadata, X12_ELEMENT.GE, null, null);
@@ -232,7 +232,7 @@ public class Debatcher {
 	private void readTransactionSets() throws Exception {
 		while (true) {
 			if (!"ST".equals(segmentReader.field(0))) {
-				throw new DebatcherException ("Missing ST segment",
+				throw new DebatcherException("Missing ST segment",
 						DefaultValidator.IK3_999_ERROR_MISS_SEG,
 						ERROR.TYPE_999,
 						ERROR_LEVEL.Batch,
@@ -259,11 +259,11 @@ public class Debatcher {
 
 			// TODO: This logic is specific to claims (837). We could decouple this a bit more.
 			if ("837".equals(st01) && CLAIM_TYPE.OTH != claimType) {
-				readHeader();				
-				
+				readHeader();
+
 				// Let's go down the rabbit hole...
 				readHierarchicalLevels();
-				
+
 			} else {
 				// Not a valid claim. For implementation revisit this section later.
 			}
@@ -372,27 +372,27 @@ public class Debatcher {
 	private int getLxCount(String str) {
 		return StringUtils.countMatches(str, "LX" + delimiters.getField());
 	}
-	
+
 	// TODO: Logic in these private methods below are specific to claims (837). We could decouple them a bit more.
-    // -----------------------------------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------------------
 
 	private void readClaim() throws Exception {
 		claimCnt++;
-		
+
 		boolean addedRefD9 = false;
 		boolean readClmSegment = false;
 		while (true) {
 			if (!addedRefD9) {
 				if (isAtRefD9()) {
 					StringBuffer refD9 = new StringBuffer("REF").append(delimiters.getField())
-																.append("D9")
-																.append(delimiters.getField())
-																.append(transactionId)
-																.append("_")
-																.append(String.format("%05d", claimCnt));
+							.append("D9")
+							.append(delimiters.getField())
+							.append(transactionId)
+							.append("_")
+							.append(String.format("%05d", claimCnt));
 					claimBuffer.append(delimiters.getEOL())
-							   .append(refD9)
-							   .append(delimiters.getSegmentTerminator()); // *** WRITE ***
+							.append(refD9)
+							.append(delimiters.getSegmentTerminator()); // *** WRITE ***
 					addedRefD9 = true;
 				}
 			}
@@ -415,10 +415,10 @@ public class Debatcher {
 			segmentCnt++;
 
 			if ("".equals(segmentReader.current())) {
-				return;  // exit recursion
+				return; // exit recursion
 			}
 
-			if ("CLM".equals(segmentReader.field(0)) || "SE".equals(segmentReader.field(0)) || "HL".equals(segmentReader.field(0))) {		
+			if ("CLM".equals(segmentReader.field(0)) || "SE".equals(segmentReader.field(0)) || "HL".equals(segmentReader.field(0))) {
 				writeClaim(); // output, possible end to recursion
 				if ("HL".equals(segmentReader.field(0))) {
 					// Let's go down the rabbit hole... (indirect recursion)
@@ -492,7 +492,7 @@ public class Debatcher {
 			 * far then segmentsBeforeRefD9ForP and segmentsBeforeRefD9ForI need to be
 			 * updated with the correct segments. return true; }
 			 */
-			
+
 			if ("REF".equals(firstElement) && "D9".equals(secondElement)) {
 				segmentReader.setCurrent(null); // Ignore the existing REF*D9
 				return true; // The current segment is REF*D9.
@@ -533,8 +533,7 @@ public class Debatcher {
 	private CLAIM_TYPE getClaimType(String segment) {
 		if (segmentReader.field(3).startsWith("005010X222")) {
 			return CLAIM_TYPE.PRO; // Professional
-		}
-		else if (segmentReader.field(3).startsWith("005010X223")) {
+		} else if (segmentReader.field(3).startsWith("005010X223")) {
 			return CLAIM_TYPE.INS; // Institutional
 		}
 		return CLAIM_TYPE.OTH; // Other

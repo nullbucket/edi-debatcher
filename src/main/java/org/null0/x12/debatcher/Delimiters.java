@@ -6,7 +6,7 @@ class Delimiters {
 	private EdiWrapStyle ediWrap;
 	private String eol;
 	private String osNewLine;
-	
+
 	enum EdiWrapStyle {
 		Unknown, Unwrapped, Unix, Windows
 	};
@@ -43,18 +43,17 @@ class Delimiters {
 	public void setLineWrap(EdiWrapStyle ediWrap) {
 		this.ediWrap = ediWrap;
 	}
-	
-	/**
-	 * Reads up to maxBytesToScan for a data chunk in order to determine EDI line wrap style.
+
+	/** Reads up to maxBytesToScan for a data chunk in order to determine EDI line wrap style.
 	 * Outcome can be determined by looking at the return value or the new state given by getLineWrap.
+	 * 
 	 * @param dataChunk input byte buffer
 	 * @param maxBytesToScan max bytes to scan before stopping/failing
-	 * @return EdiWrapStyle This setter returns the wrap style (same as calling getLineWrap)
-	 */
+	 * @return EdiWrapStyle This setter returns the wrap style (same as calling getLineWrap) */
 	public EdiWrapStyle setLineWrap(byte[] dataChunk, int maxBytesToScan) {
 		eol = "";
 		ediWrap = EdiWrapStyle.Unwrapped;
-		int max = Math.min(dataChunk.length, maxBytesToScan); 
+		int max = Math.min(dataChunk.length, maxBytesToScan);
 		for (int i = 0; i < max - 1; i++) {
 			if (dataChunk[i] == 0x0D && dataChunk[i + 1] == 0x0A) {
 				ediWrap = EdiWrapStyle.Windows;
@@ -68,7 +67,7 @@ class Delimiters {
 		}
 		return ediWrap;
 	}
-	
+
 	public String getEOL() {
 		return eol;
 	}

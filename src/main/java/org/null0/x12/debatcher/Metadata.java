@@ -3,7 +3,9 @@ package org.null0.x12.debatcher;
 // TODO: reverse-engineer metadata logger to decouple
 public interface Metadata {
 
-    static enum METADATA_STATUS {Initial, InProcess, Accepted,  Fail, Rejected, Analysis_Configuration, Analysis_Submission, Analysis_Internal};
+	static enum METADATA_STATUS {
+		Initial, InProcess, Accepted, Fail, Rejected, Analysis_Configuration, Analysis_Submission, Analysis_Internal
+	};
 
 	long logBatchSubmissionData(String transactionId);
 

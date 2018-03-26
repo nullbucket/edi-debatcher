@@ -25,9 +25,9 @@ public class DefaultConfig implements Config {
 	private static final String ENVAR_NAME = "edi_debatch_config_file"; // If this environment variable exists it must contain full valid path to properties file	
 	private static final String FILE_NAME = "debatcher.properties"; // Default expected local properties file name if config_env_name environment variable does not exist 
 	private static final Logger LOG = LoggerFactory.getLogger(Config.class); // Logger
-	
+
 	private Properties properties;
-	
+
 	// Configuration Values from debatcher.properties
 	private Path outDir;
 	private int bufferSize;
@@ -42,21 +42,21 @@ public class DefaultConfig implements Config {
 				initFromFailover();
 			}
 		}
-	
+
 		try {
 			setProperties();
 		} catch (Exception e) {
 			LOG.error("Exception in CTOR", e);
 		}
 	}
-	
-	public DefaultConfig (String file) throws Exception {
-		initFromFile(file);		
+
+	public DefaultConfig(String file) throws Exception {
+		initFromFile(file);
 		setProperties();
-	}	
-	
+	}
+
 	@Override
-	public Path getOutputDirectory()  {
+	public Path getOutputDirectory() {
 		return this.outDir;
 	}
 
@@ -64,17 +64,17 @@ public class DefaultConfig implements Config {
 	public int getBufferSize() {
 		return bufferSize;
 	}
-	
+
 	@Override
 	public boolean willUpdateTransactionId() {
 		return willUpdateTransactionId;
 	}
-	
+
 	@Override
 	public boolean willRejectOnValidationError() {
 		return willRejectOnValidationError;
 	}
-	
+
 	@Override
 	public String[] getValidSenders() {
 		return validSendersISA06;
@@ -87,17 +87,17 @@ public class DefaultConfig implements Config {
 
 	private void setProperties() throws Exception {
 		this.bufferSize = Integer.parseInt(this.properties.getProperty("buffer_size"));
-		this.outDir = toPath(this.properties.getProperty("output_directory"));		
+		this.outDir = toPath(this.properties.getProperty("output_directory"));
 		this.willUpdateTransactionId = BooleanUtils.toBoolean(this.properties.getProperty("will_update_transaction_id"));
 		this.validSendersISA06 = setList("valid_senders_isa06");
 		this.validReceiversISA08 = setList("valid_receivers_isa08");
 	}
-	
+
 	private String[] setList(String propertyName) {
 		String s = this.properties.getProperty(propertyName);
 		return StringUtils.isAllBlank(s) ? new String[0] : s.split(",");
 	}
-	
+
 	private boolean initFromEnvVar() {
 		String envVarValue = System.getenv(ENVAR_NAME);
 		if (!StringUtils.isAllBlank(envVarValue)) {
@@ -108,7 +108,7 @@ public class DefaultConfig implements Config {
 		}
 		return false;
 	}
-	
+
 	private boolean initFromLocal() {
 		try {
 			this.properties = this.getPropertiesFromResource();
@@ -118,10 +118,10 @@ public class DefaultConfig implements Config {
 		}
 		return true;
 	}
-	
+
 	private boolean initFromFile(String path) {
 		try {
-			Properties p  = getPropertiesFromFile(path);
+			Properties p = getPropertiesFromFile(path);
 			if (p == null) {
 				return false;
 			}
@@ -132,19 +132,19 @@ public class DefaultConfig implements Config {
 		LOG.info("Loaded properties from file '{}'.", path);
 		return true;
 	}
-	
+
 	private void initFromFailover() {
 		final int DEFAULT_BUFFER_SIZE = 1024;
 		this.bufferSize = DEFAULT_BUFFER_SIZE;
-		
+
 		try {
 			this.outDir = toPath(getLocalDir());
 			LOG.warn("Failover (see previous errors). Config.outDir set to dir relative to .jar: {}", this.outDir);
 		} catch (NotDirectoryException e) {
 			LOG.error("Unable to recover using failover: could not determine java resource path", e); // This should never happen
-		} 
+		}
 	}
-	
+
 	private String getLocalDir() {
 		String path = "";
 		try {
@@ -154,7 +154,7 @@ public class DefaultConfig implements Config {
 		}
 		return path;
 	}
-	
+
 	private Properties getPropertiesFromFile(String path) throws IOException {
 		Properties p = new Properties();
 		p.load(new FileInputStream(path));
@@ -163,18 +163,18 @@ public class DefaultConfig implements Config {
 
 	private Properties getPropertiesFromResource() throws IOException {
 		Properties p = null;
-		try (InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(FILE_NAME)) {				
+		try (InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(FILE_NAME)) {
 			p = new Properties();
 			p.load(stream);
 		} catch (IOException e) {
 			throw e;
 		}
-		return p;		
+		return p;
 	}
-	
-	private Path toPath (final String path) throws NotDirectoryException {
+
+	private Path toPath(final String path) throws NotDirectoryException {
 		if (path == null || path.isEmpty()) {
-			throw new NotDirectoryException("Path was empty or null"); 
+			throw new NotDirectoryException("Path was empty or null");
 		}
 		final Path p = Paths.get(path);
 		if (!Files.exists(p) || !Files.isDirectory(p)) {

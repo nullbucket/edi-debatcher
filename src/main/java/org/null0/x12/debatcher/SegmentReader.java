@@ -47,6 +47,7 @@ class SegmentReader {
 		initialFileValidation = false;
 		lastPartialSegment = "";
 	}
+
 	public boolean fileReadCompleted() {
 		return fileReadCompleted;
 	}
@@ -69,7 +70,7 @@ class SegmentReader {
 	public String current() {
 		return segment;
 	}
-	
+
 	// TODO: I don't like having this public, but it is used in current tri-state logic for REF-D9
 	public void setCurrent(String value) {
 		segment = value;
@@ -77,7 +78,7 @@ class SegmentReader {
 			fields = segment.split("\\" + delimiters.getField()); // all fields for current segment
 		}
 	}
-	
+
 	public String next() throws Exception {
 		if (segments == null) {
 			getDataChunk();
@@ -166,5 +167,5 @@ class SegmentReader {
 			// segments = ArrayUtils.removeElement(segments, lastPartialSegment);
 			segments = Arrays.copyOf(segments, segments.length - 1);
 		}
-	}	
+	}
 }

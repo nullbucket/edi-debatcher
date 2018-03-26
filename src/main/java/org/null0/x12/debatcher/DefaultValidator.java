@@ -14,7 +14,7 @@ then all the other code in this class could just be left here as a base (default
 /* TODO: If you compare the validations here against an actual EDI spec (such as ASC12 X223A3_Consolidated from WPC, 2014),
 you'll see that the validations here are WAY TOO LOCALIZED to be used as for general purpose validation. This validator needs 
 to be redesigned to be configurable: allow a validation to be turned off, and/or make the validations configurable, especially lists!
- */ 
+ */
 
 /* TODO: This class is a result of a serious lack of object-oriented design; smells horrible. */
 
@@ -26,7 +26,7 @@ public class DefaultValidator implements Validator {
 	public DefaultValidator(Config config) {
 		this.config = config;
 	}
-	
+
 	public boolean validate(long batchId, X12_ELEMENT elementName, String actual, String expected) throws Exception {
 		logger.debug("Validating {} for data {} and expected {}", elementName, actual, expected);
 
@@ -34,8 +34,8 @@ public class DefaultValidator implements Validator {
 		String trimmed = StringUtils.trimToEmpty(actual);
 		switch (elementName) {
 		case ISA06:
-			 String[] senders = config.getValidSenders();
-			 if(senders.length > 0 && !Arrays.asList(senders).contains(trimmed)) {
+			String[] senders = config.getValidSenders();
+			if (senders.length > 0 && !Arrays.asList(senders).contains(trimmed)) {
 				logError(batchId, TA1_ERROR_ISA06, ERROR.TYPE_TA1, "Invalid Interchange Sender ID(ISA06)", trimmed, expected);
 			}
 			break;
@@ -44,12 +44,12 @@ public class DefaultValidator implements Validator {
 			if (!equals("ZZ", trimmed)) {
 				logError(batchId, TA1_ERROR_ISA07, ERROR.TYPE_TA1, "Invalid Interchange Receiver ID(ISA07) Qualifier", trimmed, expected); // ZZ Mutually Defined
 			}
-			break;			
+			break;
 		case ISA08:
-			 String[] receivers = config.getValidReceivers();
-			 if(receivers.length > 0 && !Arrays.asList(receivers).contains(trimmed)) {
-				 logError(batchId, TA1_ERROR_ISA08, ERROR.TYPE_TA1, "Invalid Interchange Receiver ID(ISA08)", trimmed, expected);
-			 }	 
+			String[] receivers = config.getValidReceivers();
+			if (receivers.length > 0 && !Arrays.asList(receivers).contains(trimmed)) {
+				logError(batchId, TA1_ERROR_ISA08, ERROR.TYPE_TA1, "Invalid Interchange Receiver ID(ISA08)", trimmed, expected);
+			}
 			break;
 		case ISA11:
 			if (!Arrays.asList(validISA11).contains(trimmed)) {
@@ -177,33 +177,33 @@ public class DefaultValidator implements Validator {
 	public void logError(long batchId, String errorCode, ERROR errorType, String errorMessage) throws DebatcherException {
 		logError(batchId, errorCode, errorType, errorMessage, null, null); // public doesn't log actual/expected
 	}
-	
+
 	private void logError(long batchId, String errorCode, ERROR errorType, String errorMessage, String actual, String expected) throws DebatcherException {
 		// TODO: enable metadata logging but reuse same instance
 		// new MetadataServicesImpl().insertValidationError(batchId, errorCode, errorType);
-		
-		String msg = String.format("batch=%d, type=%s, code=%s, msg='%s'%s%s", 
-				batchId, 
-				errorType.getCode(), 
-				errorCode, 
+
+		String msg = String.format("batch=%d, type=%s, code=%s, msg='%s'%s%s",
+				batchId,
+				errorType.getCode(),
+				errorCode,
 				errorMessage,
 				actual == null ? "" : String.format(", value=%s", actual),
 				expected == null ? "" : String.format(", expected=%s", expected));
-		
+
 		if (!config.willRejectOnValidationError()) {
 			logger.warn(msg);
 			return;
 		}
-		
+
 		logger.error(msg);
 		throw new DebatcherException(
-				errorMessage, 
-				errorCode, 
-				errorType, 
-				DebatcherException.ERROR_LEVEL.Batch, 
+				errorMessage,
+				errorCode,
+				errorType,
+				DebatcherException.ERROR_LEVEL.Batch,
 				batchId);
 	}
-	
+
 	private boolean equals(String str1, String str2) {
 		return str1 != null && str2 != null && str1.trim().equals(str2.trim());
 	}

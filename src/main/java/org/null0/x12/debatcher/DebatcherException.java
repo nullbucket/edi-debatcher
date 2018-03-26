@@ -1,4 +1,5 @@
 package org.null0.x12.debatcher;
+
 import org.null0.x12.debatcher.Validator.ERROR;
 
 // TODO: This was migrated from something too complex; simplify
@@ -10,9 +11,11 @@ public class DebatcherException extends Exception {
 	private ERROR_LEVEL errorLevel;
 	private String ediFileName;
 
-	public static enum ERROR_LEVEL { Batch, Encounter }; // NO_UCD (use default)
+	public static enum ERROR_LEVEL {
+		Batch, Encounter
+	}; // NO_UCD (use default)
 
-	public DebatcherException (String msg, String errorCode, ERROR errorType, ERROR_LEVEL errorLevel, long idBatch) {
+	public DebatcherException(String msg, String errorCode, ERROR errorType, ERROR_LEVEL errorLevel, long idBatch) {
 		super(msg);
 		this.errorCode = errorCode;
 		this.errorType = errorType;
@@ -65,10 +68,10 @@ public class DebatcherException extends Exception {
 	}
 
 	private static String getStackTraceFromException(Throwable e, StringBuffer buf) {
-		if (e == null ) {
+		if (e == null) {
 			return null;
 		}
-		
+
 		StackTraceElement[] elements = e.getStackTrace();
 		if (elements != null && elements.length > 0) {
 			if (buf == null) {
@@ -90,7 +93,7 @@ public class DebatcherException extends Exception {
 		if (e.getCause() != null) {
 			getStackTraceFromException(e.getCause(), buf);
 		}
-		
+
 		return new String(buf);
 	}
 

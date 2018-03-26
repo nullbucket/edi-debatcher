@@ -16,12 +16,12 @@ import org.null0.x12.debatcher.Validator;
 import org.null0.x12.debatcher.DefaultValidator;
 import org.null0.x12.debatcher.DefaultMetadata;
 
-public class ValidatorTest {	
+public class ValidatorTest {
 	@After
 	public void tearDown() {
-        TestFileCleaner.clean(".edi.txt");
+		TestFileCleaner.clean(".edi.txt");
 	}
-	
+
 	@Test
 	public void test_valid() throws Exception {
 		String id = "valid";
@@ -39,7 +39,7 @@ public class ValidatorTest {
 	}
 
 	@Test
-	public void test_ISA06EmptyInterchangeSenderId() throws Exception {	
+	public void test_ISA06EmptyInterchangeSenderId() throws Exception {
 		checkError("emptyInterchangeSenderId", Validator.TA1_ERROR_ISA06);
 	}
 
@@ -172,22 +172,22 @@ public class ValidatorTest {
 			assertEquals(errorCode, e.getErrorCode());
 		}
 	}
-	
+
 	private Debatcher createDebatcher() {
 		Config mockConfig = mock(Config.class);
 		when(mockConfig.getOutputDirectory()).thenReturn(Paths.get("./"));
 		when(mockConfig.getBufferSize()).thenReturn(1024);
 		when(mockConfig.willUpdateTransactionId()).thenReturn(false);
 		when(mockConfig.willRejectOnValidationError()).thenReturn(true);
-		when(mockConfig.getValidReceivers()).thenReturn(new String[]{"80882"});
-		when(mockConfig.getValidSenders()).thenReturn(new String[]{"ENH9999"});
-		
-		return new Debatcher (
+		when(mockConfig.getValidReceivers()).thenReturn(new String[] { "80882" });
+		when(mockConfig.getValidSenders()).thenReturn(new String[] { "ENH9999" });
+
+		return new Debatcher(
 				mockConfig,
 				new DefaultValidator(mockConfig),
 				new DefaultMetadata());
 	}
-	
+
 	private InputStream openStream(String id) throws Exception {
 		String file = "files/validations/" + id + ".txt";
 		return Thread.currentThread().getContextClassLoader().getResourceAsStream(file);

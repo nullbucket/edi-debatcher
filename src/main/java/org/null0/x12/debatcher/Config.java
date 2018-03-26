@@ -1,4 +1,4 @@
-package org.null0.edi.debatcher.interfaces;
+package org.null0.x12.debatcher;
 
 import java.nio.file.Path;
 

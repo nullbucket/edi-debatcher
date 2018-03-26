@@ -1,17 +1,18 @@
-package org.null0.edi.debatcher.test;
+package org.null0.x12.debatcher.test;
 
 import java.io.InputStream;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.null0.x12.debatcher.Config;
+import org.null0.x12.debatcher.DefaultConfig;
+import org.null0.x12.debatcher.Debatcher;
+import org.null0.x12.debatcher.DefaultValidator;
+import org.null0.x12.debatcher.DefaultMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.null0.edi.debatcher.ConfigDefault;
-import org.null0.edi.debatcher.Debatcher;
-import org.null0.edi.debatcher.EdiValidatorDefault;
-import org.null0.edi.debatcher.MetadataLoggerDefault;
-import org.null0.edi.debatcher.interfaces.Config;
 
 public class DebatcherTest {
 	private static final Logger logger = LoggerFactory.getLogger(DebatcherTest.class);
@@ -25,11 +26,16 @@ public class DebatcherTest {
 
 	@Before
 	public void setUp() throws Exception {
-		Config config = new ConfigDefault();
+		Config config = new DefaultConfig();
 		DebatcherTest.debatcher = new Debatcher(
 				config,
-				new EdiValidatorDefault(config),
-				new MetadataLoggerDefault());
+				new DefaultValidator(config),
+				new DefaultMetadata());
+	}
+	
+	@After
+	public void tearDown() {
+        TestFileCleaner.clean(".edi.txt");
 	}
 
 	@Test(expected=NullPointerException.class)

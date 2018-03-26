@@ -1,4 +1,4 @@
-package org.null0.edi.debatcher;
+package org.null0.x12.debatcher;
 
 class Delimiters {
 	private char dataElementSeparator;

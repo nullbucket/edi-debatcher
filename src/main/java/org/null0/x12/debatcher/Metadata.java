@@ -1,7 +1,7 @@
-package org.null0.edi.debatcher.interfaces;
+package org.null0.x12.debatcher;
 
 // TODO: reverse-engineer metadata logger to decouple
-public interface MetadataLogger {
+public interface Metadata {
 
     static enum METADATA_STATUS {Initial, InProcess, Accepted,  Fail, Rejected, Analysis_Configuration, Analysis_Submission, Analysis_Internal};
 

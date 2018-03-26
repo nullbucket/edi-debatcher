@@ -1,12 +1,12 @@
-package org.null0.edi.debatcher.interfaces;
+package org.null0.x12.debatcher;
 
 import java.util.HashMap;
 import java.util.Map;
 
 // TODO: WTF? This thing imported itself before?
-//import org.null0.edi.debatcher.validation.EncounterEdiValidator.ERROR;
+//import org.null0.x12.debatcher.validation.EncounterEdiValidator.ERROR;
 
-public interface EdiValidator {
+public interface Validator {
 	static enum X12_ELEMENT {
 		ISA06, ISA07, ISA08, ISA11, ISA12, ISA13, ISA14, ISA15, ISA16, IEA01, IEA02, ISAEnd, DATA_SEPARATOR, GS, GS01, GS06, GS08, GE, GE01, ST01, ST02, ST03, SE, SE01
 	};

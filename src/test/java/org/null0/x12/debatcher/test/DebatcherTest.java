@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class DebatcherTest {
 	private static final Logger logger = LoggerFactory.getLogger(DebatcherTest.class);
-	private static Debatcher debatcher;
+	private Debatcher debatcher;
 
 	@BeforeClass
 	public static void setUpClass() {
@@ -27,10 +27,7 @@ public class DebatcherTest {
 	@Before
 	public void setUp() throws Exception {
 		Config config = new DefaultConfig();
-		DebatcherTest.debatcher = new Debatcher(
-				config,
-				new DefaultValidator(config),
-				new DefaultMetadata());
+		debatcher = new Debatcher(config, new DefaultValidator(config),	new DefaultMetadata());
 	}
 
 	@After
@@ -109,6 +106,16 @@ public class DebatcherTest {
 	}
 
 	@Test
+	public void test_I_NoRefD9() throws Exception {
+		test("NoRefD9_I");
+	}
+
+	@Test
+	public void test_I_RefD9() throws Exception {
+		test("RefD9_I");
+	}
+
+	@Test
 	public void test_Large() throws Exception {
 		long startTime = System.currentTimeMillis();
 		test("837PFile_Large");
@@ -126,21 +133,11 @@ public class DebatcherTest {
 		test("RefD9_P");
 	}
 
-	@Test
-	public void test_I_NoRefD9() throws Exception {
-		test("NoRefD9_I");
-	}
-
-	@Test
-	public void test_I_RefD9() throws Exception {
-		test("RefD9_I");
+	private InputStream getInputStream(String name) throws Exception {
+		return Thread.currentThread().getContextClassLoader().getResourceAsStream("files/" + name + ".txt");
 	}
 
 	private void test(String name) throws Exception {
 		debatcher.debatch(name, getInputStream(name));
-	}
-
-	private InputStream getInputStream(String name) throws Exception {
-		return Thread.currentThread().getContextClassLoader().getResourceAsStream("files/" + name + ".txt");
 	}
 }

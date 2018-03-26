@@ -4,60 +4,49 @@ import java.io.EOFException;
 import java.io.InputStream;
 import java.util.Arrays;
 
-import org.null0.x12.debatcher.DebatcherException.ERROR_LEVEL;
+import org.null0.x12.debatcher.DebatcherException.ErrorLevel;
 import org.null0.x12.debatcher.Delimiters.EdiWrapStyle;
-import org.null0.x12.debatcher.Validator.ERROR;
+import org.null0.x12.debatcher.Validator.Error;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class SegmentReader {
 	private static final Logger logger = LoggerFactory.getLogger(SegmentReader.class);
-
-	// class invariants
+	
 	private Config config;
 	private Delimiters delimiters;
 	private InputStream inputStream;
 	private long batchId;
-
-	// fields
-	private String segment;
+	
 	private String[] fields;
+	private boolean fileReadCompleted;
 	private boolean initialFileValidation;
-	private boolean isIeaFound;
 	private boolean isEOF;
-
-	// internal state
+	private boolean isIeaFound;
 	private boolean lastDataChunkReturned;
 	private String lastPartialSegment;
-	private boolean fileReadCompleted;
-	private String[] segments;
+	private String segment;
 	private int segmentIndex;
+	private String[] segments;
 
 	SegmentReader(Config config, Delimiters delimiters, InputStream inputStream, long batchIdMetadata) {
 		this.config = config;
 		this.delimiters = delimiters;
 		this.inputStream = inputStream;
+		this.batchId = batchIdMetadata;
 		fields = null;
-		segment = null;
-		segmentIndex = 0;
 		fileReadCompleted = false;
+		initialFileValidation = false;
 		isEOF = false; // is this the same as fileReadCompleted?
 		isIeaFound = false;
 		lastDataChunkReturned = false;
-		initialFileValidation = false;
 		lastPartialSegment = "";
+		segmentIndex = 0;
+		segment = null;
 	}
 
-	public boolean fileReadCompleted() {
-		return fileReadCompleted;
-	}
-
-	public boolean isIeaFound() {
-		return isIeaFound;
-	}
-
-	public boolean isEOF() {
-		return isEOF;
+	public String current() {
+		return segment;
 	}
 
 	public String field(int position) {
@@ -67,16 +56,16 @@ class SegmentReader {
 		return fields[position].replaceAll("\\r|\\n", "");
 	}
 
-	public String current() {
-		return segment;
+	public boolean fileReadCompleted() {
+		return fileReadCompleted;
 	}
 
-	// TODO: I don't like having this public, but it is used in current tri-state logic for REF-D9
-	public void setCurrent(String value) {
-		segment = value;
-		if (segment != null) {
-			fields = segment.split("\\" + delimiters.getField()); // all fields for current segment
-		}
+	public boolean isEOF() {
+		return isEOF;
+	}
+
+	public boolean isIeaFound() {
+		return isIeaFound;
 	}
 
 	public String next() throws Exception {
@@ -98,6 +87,14 @@ class SegmentReader {
 		}
 		return segment;
 		// logger.debug("Segment: {}", segment);
+	}
+
+	// TODO: I don't like having this public, but it is used in current tri-state logic for REF-D9
+	public void setCurrent(String value) {
+		segment = value;
+		if (segment != null) {
+			fields = segment.split("\\" + delimiters.getField()); // all fields for current segment
+		}
 	}
 
 	private void getDataChunk() throws Exception {
@@ -134,8 +131,8 @@ class SegmentReader {
 				throw new DebatcherException(
 						"Not a valid Interchange Segment",
 						Validator.TA1_ERROR_ISAIEA,
-						ERROR.TYPE_TA1,
-						ERROR_LEVEL.Batch,
+						Error.TYPE_TA1,
+						ErrorLevel.BATCH,
 						batchId);
 			}
 			initialFileValidation = true;

@@ -1,15 +1,15 @@
 package org.null0.x12.debatcher;
 
 class Delimiters {
+	enum EdiWrapStyle {
+		Unix, Unknown, Unwrapped, Windows
+	}
+	
 	private char dataElementSeparator;
-	private char segmentTerminator;
 	private EdiWrapStyle ediWrap;
 	private String eol;
 	private String osNewLine;
-
-	enum EdiWrapStyle {
-		Unknown, Unwrapped, Unix, Windows
-	};
+	private char segmentTerminator;;
 
 	public Delimiters() {
 		this.osNewLine = System.getProperty("line.separator");
@@ -20,28 +20,28 @@ class Delimiters {
 		this.segmentTerminator = '~';
 	}
 
+	public String getEOL() {
+		return eol;
+	}
+
 	public char getField() {
 		return dataElementSeparator;
-	}
-
-	public void setField(char dataElementSeparator) {
-		this.dataElementSeparator = dataElementSeparator;
-	}
-
-	public char getSegmentTerminator() {
-		return segmentTerminator;
-	}
-
-	public void setSegmentTerminator(char segmentTerminator) {
-		this.segmentTerminator = segmentTerminator;
 	}
 
 	public EdiWrapStyle getLineWrap() {
 		return ediWrap;
 	}
 
-	public void setLineWrap(EdiWrapStyle ediWrap) {
-		this.ediWrap = ediWrap;
+	public String getOsNewLine() {
+		return osNewLine;
+	}
+
+	public char getSegmentTerminator() {
+		return segmentTerminator;
+	}
+
+	public void setField(char dataElementSeparator) {
+		this.dataElementSeparator = dataElementSeparator;
 	}
 
 	/** Reads up to maxBytesToScan for a data chunk in order to determine EDI line wrap style.
@@ -68,11 +68,11 @@ class Delimiters {
 		return ediWrap;
 	}
 
-	public String getEOL() {
-		return eol;
+	public void setLineWrap(EdiWrapStyle ediWrap) {
+		this.ediWrap = ediWrap;
 	}
 
-	public String getOsNewLine() {
-		return osNewLine;
+	public void setSegmentTerminator(char segmentTerminator) {
+		this.segmentTerminator = segmentTerminator;
 	}
 }

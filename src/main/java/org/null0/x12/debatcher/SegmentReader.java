@@ -133,7 +133,7 @@ class SegmentReader {
 			if (!"ISA".equals(data.substring(0, 3))) {
 				throw new DebatcherException(
 						"Not a valid Interchange Segment",
-						DefaultValidator.TA1_ERROR_ISAIEA,
+						Validator.TA1_ERROR_ISAIEA,
 						ERROR.TYPE_TA1,
 						ERROR_LEVEL.Batch,
 						batchId);

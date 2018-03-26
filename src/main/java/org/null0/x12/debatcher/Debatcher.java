@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.Stack;
 
 import org.apache.commons.lang3.StringUtils;
-import org.null0.x12.debatcher.DefaultValidator;
 import org.null0.x12.debatcher.DebatcherException.ERROR_LEVEL;
 import org.null0.x12.debatcher.Validator.CLAIM_TYPE;
 import org.null0.x12.debatcher.Validator.ERROR;
@@ -175,7 +174,7 @@ public class Debatcher {
 			if (!isa13.equals(iea02)) {
 				logger.error("ISA13 {} & IEA02 {} don't match", isa13, iea02);
 				throw new DebatcherException("ISA13 & IEA02 don't match",
-						DefaultValidator.TA1_ERROR_ISA13,
+						Validator.TA1_ERROR_ISA13,
 						ERROR.TYPE_TA1,
 						ERROR_LEVEL.Batch,
 						batchIdMetadata);
@@ -233,7 +232,7 @@ public class Debatcher {
 		while (true) {
 			if (!"ST".equals(segmentReader.field(0))) {
 				throw new DebatcherException("Missing ST segment",
-						DefaultValidator.IK3_999_ERROR_MISS_SEG,
+						Validator.IK3_999_ERROR_MISS_SEG,
 						ERROR.TYPE_999,
 						ERROR_LEVEL.Batch,
 						batchIdMetadata);
@@ -359,7 +358,7 @@ public class Debatcher {
 			// throw new DebatcherException("Missing CLM segment",
 			// DefaultValidator.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999,
 			// ERROR_LEVEL.Batch, batchIdMetadata, ERROR_OR_EXCEPTION.Exception);
-			ediValidator.logError(batchIdMetadata, DefaultValidator.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999, "Missing CLM segment");
+			ediValidator.logError(batchIdMetadata, Validator.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999, "Missing CLM segment");
 		} else {
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.IEA01, null, null);
 		}
@@ -403,7 +402,7 @@ public class Debatcher {
 					clm01 = segmentReader.field(1);
 					if (clm01 == null || clm01.isEmpty()) {
 						ediValidator.logError(batchIdMetadata,
-								DefaultValidator.IK3_999_ERROR_MISS_DATA_ELEMENT, ERROR.TYPE_999,
+								Validator.IK3_999_ERROR_MISS_DATA_ELEMENT, ERROR.TYPE_999,
 								"Missing CLM01 value");
 					}
 					clm05 = segmentReader.field(5);

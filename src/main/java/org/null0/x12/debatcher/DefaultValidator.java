@@ -27,6 +27,7 @@ public class DefaultValidator implements Validator {
 		this.config = config;
 	}
 
+	@Override
 	public boolean validate(long batchId, X12_ELEMENT elementName, String actual, String expected) throws Exception {
 		logger.debug("Validating {} for data {} and expected {}", elementName, actual, expected);
 
@@ -174,6 +175,7 @@ public class DefaultValidator implements Validator {
 		return true;
 	}
 
+	@Override
 	public void logError(long batchId, String errorCode, ERROR errorType, String errorMessage) throws DebatcherException {
 		logError(batchId, errorCode, errorType, errorMessage, null, null); // public doesn't log actual/expected
 	}

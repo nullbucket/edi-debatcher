@@ -2,7 +2,8 @@ package org.null0.x12.debatcher.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.InputStream;
 import java.nio.file.Paths;
@@ -12,9 +13,9 @@ import org.junit.Test;
 import org.null0.x12.debatcher.Config;
 import org.null0.x12.debatcher.Debatcher;
 import org.null0.x12.debatcher.DebatcherException;
-import org.null0.x12.debatcher.Validator;
-import org.null0.x12.debatcher.DefaultValidator;
 import org.null0.x12.debatcher.DefaultMetadata;
+import org.null0.x12.debatcher.DefaultValidator;
+import org.null0.x12.debatcher.Validator;
 
 public class ValidatorTest {
 	@After

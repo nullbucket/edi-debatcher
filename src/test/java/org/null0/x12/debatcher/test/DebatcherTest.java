@@ -7,10 +7,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.null0.x12.debatcher.Config;
-import org.null0.x12.debatcher.DefaultConfig;
 import org.null0.x12.debatcher.Debatcher;
-import org.null0.x12.debatcher.DefaultValidator;
+import org.null0.x12.debatcher.DefaultConfig;
 import org.null0.x12.debatcher.DefaultMetadata;
+import org.null0.x12.debatcher.DefaultValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

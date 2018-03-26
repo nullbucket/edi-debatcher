@@ -1,4 +1,4 @@
-package org.null0.edi.debatcher.test;
+package org.null0.x12.debatcher.test;
 
 import static org.junit.Assert.*;
 
@@ -6,12 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.junit.Test;
-import org.null0.edi.debatcher.ConfigDefault;
-import org.null0.edi.debatcher.interfaces.Config;
+import org.null0.x12.debatcher.Config;
+import org.null0.x12.debatcher.DefaultConfig;
 
 public class ConfigTest {
-
-
 	@Test
 	public void testLocalPropertiesFile() throws Exception {
 		Config config = testOutputDirectory();		
@@ -20,7 +18,7 @@ public class ConfigTest {
 	}	
 
 	private Config testOutputDirectory() throws Exception {
-		Config config = new ConfigDefault();
+		Config config = new DefaultConfig();
 		Path path = config.getOutputDirectory();	
 		assertTrue(Files.exists(path));
 		return config;

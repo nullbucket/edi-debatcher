@@ -1,4 +1,4 @@
-package org.null0.edi.debatcher;
+package org.null0.x12.debatcher;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -12,7 +12,6 @@ import java.util.Properties;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.null0.edi.debatcher.interfaces.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * 
  */
 // TODO: define an interface for Config so that for unit testing we can use it instead without any file I/O dependencies
-public class ConfigDefault implements Config {
+public class DefaultConfig implements Config {
 	private static final String ENVAR_NAME = "edi_debatch_config_file"; // If this environment variable exists it must contain full valid path to properties file	
 	private static final String FILE_NAME = "debatcher.properties"; // Default expected local properties file name if config_env_name environment variable does not exist 
 	private static final Logger LOG = LoggerFactory.getLogger(Config.class); // Logger
@@ -37,7 +36,7 @@ public class ConfigDefault implements Config {
 	private String[] validSendersISA06;
 	private String[] validReceiversISA08;
 
-	public ConfigDefault() {
+	public DefaultConfig() {
 		if (!initFromEnvVar()) {
 			if (!initFromLocal()) {
 				initFromFailover();
@@ -51,7 +50,7 @@ public class ConfigDefault implements Config {
 		}
 	}
 	
-	public ConfigDefault (String file) throws Exception {
+	public DefaultConfig (String file) throws Exception {
 		initFromFile(file);		
 		setProperties();
 	}	

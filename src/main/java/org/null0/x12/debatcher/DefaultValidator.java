@@ -1,12 +1,10 @@
-package org.null0.edi.debatcher;
+package org.null0.x12.debatcher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.null0.edi.debatcher.interfaces.Config;
-import org.null0.edi.debatcher.interfaces.EdiValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,12 +18,12 @@ to be redesigned to be configurable: allow a validation to be turned off, and/or
 
 /* TODO: This class is a result of a serious lack of object-oriented design; smells horrible. */
 
-public class EdiValidatorDefault implements EdiValidator {
-	private static final Logger logger = LoggerFactory.getLogger(EdiValidatorDefault.class);
+public class DefaultValidator implements Validator {
+	private static final Logger logger = LoggerFactory.getLogger(DefaultValidator.class);
 	private Config config;
 	private List<String> isa13List = new ArrayList<String>();
 
-	public EdiValidatorDefault(Config config) {
+	public DefaultValidator(Config config) {
 		this.config = config;
 	}
 	

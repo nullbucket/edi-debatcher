@@ -1,9 +1,7 @@
-package org.null0.edi.debatcher;
+package org.null0.x12.debatcher;
 
-import org.null0.edi.debatcher.interfaces.MetadataLogger;
-
-// TODO from UCDetector: Class "MetadataLoggerDefault" is only called from tests
-public class MetadataLoggerDefault implements MetadataLogger { // NO_UCD (test only)
+// TODO from UCDetector: Class "DefaultMetadata" is only called from tests
+public class DefaultMetadata implements Metadata { // NO_UCD (test only)
 
 	@Override
 	public long logBatchSubmissionData(String transactionId) {

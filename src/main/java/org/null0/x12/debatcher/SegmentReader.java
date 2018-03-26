@@ -1,13 +1,12 @@
-package org.null0.edi.debatcher;
+package org.null0.x12.debatcher;
 
 import java.io.EOFException;
 import java.io.InputStream;
 import java.util.Arrays;
 
-import org.null0.edi.debatcher.interfaces.Config;
-import org.null0.edi.debatcher.DebatcherException.ERROR_LEVEL;
-import org.null0.edi.debatcher.Delimiters.EdiWrapStyle;
-import org.null0.edi.debatcher.interfaces.EdiValidator.ERROR;
+import org.null0.x12.debatcher.DebatcherException.ERROR_LEVEL;
+import org.null0.x12.debatcher.Delimiters.EdiWrapStyle;
+import org.null0.x12.debatcher.Validator.ERROR;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,7 +132,7 @@ class SegmentReader {
 			if (!"ISA".equals(data.substring(0, 3))) {
 				throw new DebatcherException(
 						"Not a valid Interchange Segment",
-						EdiValidatorDefault.TA1_ERROR_ISAIEA,
+						DefaultValidator.TA1_ERROR_ISAIEA,
 						ERROR.TYPE_TA1,
 						ERROR_LEVEL.Batch,
 						batchId);

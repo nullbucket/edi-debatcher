@@ -1,4 +1,4 @@
-package org.null0.edi.debatcher;
+package org.null0.x12.debatcher;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -15,14 +15,11 @@ import java.util.Set;
 import java.util.Stack;
 
 import org.apache.commons.lang3.StringUtils;
-import org.null0.edi.debatcher.DebatcherException.ERROR_LEVEL;
-import org.null0.edi.debatcher.interfaces.EdiValidator;
-import org.null0.edi.debatcher.interfaces.EdiValidator.CLAIM_TYPE;
-import org.null0.edi.debatcher.interfaces.EdiValidator.ERROR;
-import org.null0.edi.debatcher.interfaces.EdiValidator.X12_ELEMENT;
-import org.null0.edi.debatcher.interfaces.Config;
-import org.null0.edi.debatcher.interfaces.MetadataLogger;
-import org.null0.edi.debatcher.EdiValidatorDefault;
+import org.null0.x12.debatcher.DefaultValidator;
+import org.null0.x12.debatcher.DebatcherException.ERROR_LEVEL;
+import org.null0.x12.debatcher.Validator.CLAIM_TYPE;
+import org.null0.x12.debatcher.Validator.ERROR;
+import org.null0.x12.debatcher.Validator.X12_ELEMENT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,8 +33,8 @@ public class Debatcher {
 	// Class Invariants (CTOR)
 	// -----------------------
 	private Config config; // injected by greedy CTOR
-	private EdiValidator ediValidator; // injected by greedy CTOR
-	private MetadataLogger metadataLogger; // injected by greedy CTOR
+	private Validator ediValidator; // injected by greedy CTOR
+	private Metadata metadataLogger; // injected by greedy CTOR
 	private Delimiters delimiters; // internal
 	private SegmentReader segmentReader; // internal
 
@@ -75,7 +72,7 @@ public class Debatcher {
 	private Set<String> segmentsBeforeRefD9ForI; // TODO: specific to claims (873). Decouple. 
 	private CLAIM_TYPE claimType; // TODO: specific to claims (837). Decouple.
 	
-	public Debatcher(Config config, EdiValidator ediValidator, MetadataLogger metadataLogger) {
+	public Debatcher(Config config, Validator ediValidator, Metadata metadataLogger) {
 		this.config = config;
 		this.ediValidator = ediValidator;
 		this.metadataLogger = metadataLogger;
@@ -135,7 +132,7 @@ public class Debatcher {
 			
 			/* TODO: we should probably delete this
 			if (segment == null || segment.equals("\r\n")) {
-				throw new DebatcherException ("Invalid Control Structure", EdiValidatorDefault.TA1_ERROR_ISAIEA, ERROR.TYPE_TA1, ERROR_LEVEL.Batch, batchIdMetadata);
+				throw new DebatcherException ("Invalid Control Structure", DefaultValidator.TA1_ERROR_ISAIEA, ERROR.TYPE_TA1, ERROR_LEVEL.Batch, batchIdMetadata);
 			}*/
 			
 			isaSegment = segment.replaceAll("\\r|\\n", "");
@@ -178,7 +175,7 @@ public class Debatcher {
 			if (!isa13.equals(iea02)) {
 				logger.error("ISA13 {} & IEA02 {} don't match", isa13, iea02);
 				throw new DebatcherException("ISA13 & IEA02 don't match",
-						EdiValidatorDefault.TA1_ERROR_ISA13,
+						DefaultValidator.TA1_ERROR_ISA13,
 						ERROR.TYPE_TA1,
 						ERROR_LEVEL.Batch,
 						batchIdMetadata);
@@ -236,7 +233,7 @@ public class Debatcher {
 		while (true) {
 			if (!"ST".equals(segmentReader.field(0))) {
 				throw new DebatcherException ("Missing ST segment",
-						EdiValidatorDefault.IK3_999_ERROR_MISS_SEG,
+						DefaultValidator.IK3_999_ERROR_MISS_SEG,
 						ERROR.TYPE_999,
 						ERROR_LEVEL.Batch,
 						batchIdMetadata);
@@ -360,9 +357,9 @@ public class Debatcher {
 
 		if (segmentReader.isIeaFound()) {
 			// throw new DebatcherException("Missing CLM segment",
-			// EdiValidatorDefault.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999,
+			// DefaultValidator.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999,
 			// ERROR_LEVEL.Batch, batchIdMetadata, ERROR_OR_EXCEPTION.Exception);
-			ediValidator.logError(batchIdMetadata, EdiValidatorDefault.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999, "Missing CLM segment");
+			ediValidator.logError(batchIdMetadata, DefaultValidator.IK3_999_ERROR_MISS_SEG, ERROR.TYPE_999, "Missing CLM segment");
 		} else {
 			ediValidator.validate(batchIdMetadata, X12_ELEMENT.IEA01, null, null);
 		}
@@ -406,7 +403,7 @@ public class Debatcher {
 					clm01 = segmentReader.field(1);
 					if (clm01 == null || clm01.isEmpty()) {
 						ediValidator.logError(batchIdMetadata,
-								EdiValidatorDefault.IK3_999_ERROR_MISS_DATA_ELEMENT, ERROR.TYPE_999,
+								DefaultValidator.IK3_999_ERROR_MISS_DATA_ELEMENT, ERROR.TYPE_999,
 								"Missing CLM01 value");
 					}
 					clm05 = segmentReader.field(5);

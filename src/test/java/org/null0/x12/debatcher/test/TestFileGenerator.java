@@ -1,4 +1,4 @@
-package org.null0.edi.debatcher.test;
+package org.null0.x12.debatcher.test;
 
 import java.io.BufferedWriter;
 import java.io.File;

@@ -20,8 +20,8 @@ to be redesigned to be configurable: allow a validation to be turned off, and/or
 
 public class DefaultValidator implements Validator {
 	private static final Logger logger = LoggerFactory.getLogger(DefaultValidator.class);
-	private Config config;
-	private final List<String> isa13List = new ArrayList<String>();
+	private final Config config;
+	private final List<String> isa13List = new ArrayList<>();
 
 	public DefaultValidator(Config config) {
 		this.config = config;
@@ -184,7 +184,7 @@ public class DefaultValidator implements Validator {
 	}
 
 	private boolean isNumeric(String s) {
-		return s == null ? false : s.matches("\\d+");
+		return s != null && s.matches("\\d+");
 	}
 
 	private void logError(long batchId, String errorCode, Error errorType, String errorMessage, String actual, String expected) throws DebatcherException {

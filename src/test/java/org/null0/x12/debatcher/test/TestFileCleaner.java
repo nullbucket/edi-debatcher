@@ -9,12 +9,18 @@ public class TestFileCleaner {
 	public static synchronized boolean clean(String endsWith) {
 		try {
 			Config config = new DefaultConfig();
+			
 			File dir = new File(config.getOutputDirectory().toString());
 			if (!dir.exists()) {
 				return false;
 			}
 
-			for (File f : dir.listFiles()) {
+			File[] files = dir.listFiles();
+			if (files == null) {
+				return false;
+			}
+			
+			for (File f : files) {
 				if (f.getName().endsWith(endsWith)) {
 					f.delete();
 				}

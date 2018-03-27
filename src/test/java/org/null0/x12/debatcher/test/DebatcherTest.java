@@ -36,87 +36,77 @@ public class DebatcherTest {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void test_00() throws Exception {
+	public void test00() throws Exception {
 		test("BAD_FILE_DOES_NOT_EXIST");
 	}
 
 	@Test
-	public void test_01() throws Exception {
+	public void test01() throws Exception {
 		test("1 ISA - 1 GS - 1 ST - 1 HL 20 - 1 HL 22 - 1 CLM");
 	}
 
 	@Test
-	public void test_02() throws Exception {
+	public void test02() throws Exception {
 		test("1 ISA - 1 GS - 1 ST - 1 HL 20 - 1 HL 22 - 2 CLMs");
 	}
 
 	@Test
-	public void test_03() throws Exception {
+	public void test03() throws Exception {
 		test("1 ISA - 1 GS - 1 ST - 1 HL 20 - 1 HL 22 - 3 CLMs");
 	}
 
 	@Test
-	public void test_04() throws Exception {
+	public void test04() throws Exception {
 		test("1 ISA - 1 GS - 1 ST - 1 HL 20 - 2 HL 22 - 1 CLM FOR EACH SUBSCRIBER");
 	}
 
 	@Test
-	public void test_05() throws Exception {
+	public void test05() throws Exception {
 		test("1 ISA - 1 GS - 1 ST - 1 HL 20 - 2 HL 22 - 2 CLMs FOR EACH SUBSCRIBER");
 	}
 
 	@Test
-	public void test_06() throws Exception {
+	public void test06() throws Exception {
 		test("1 ISA - 1 GS - 1 ST - 1 HL 20 - 1 HL 22 - 1 CLM - 1 HL 20 - 1 HL 22 - 1 CLM");
 	}
 
 	@Test
-	public void test_07() throws Exception {
+	public void test07() throws Exception {
 		test("1 ISA - 1 GS - 1 ST - 1 HL 20 - 1 HL 22 - 2 CLMs - 1 HL 20 - 1 HL 22 - 2 CLMs");
 	}
 
 	@Test
-	public void test_08() throws Exception {
+	public void test08() throws Exception {
 		test("1 ISA - 1 GS - 1 ST - 1 HL 20 - 1 HL 22 - 1 CLM - 1 ST - 1 HL 20 - 1 HL 22 - 1 CLM");
 	}
 
 	@Test
-	public void test_09() throws Exception {
+	public void test09() throws Exception {
 		test("1 ISA - 1 GS - 3 STs");
 	}
 
 	@Test
-	public void test_10() throws Exception {
+	public void test10() throws Exception {
 		test("1 ISA - 2 GSs");
 	}
 
 	@Test
-	public void test_11() throws Exception {
+	public void test11() throws Exception {
 		test("2 ISAs");
 	}
 
 	@Test
-	public void test_12() throws Exception {
+	public void test12() throws Exception {
 		test("837PFile_for de-batcher_multiple_fil_configs_inonefile");
 	}
 
 	@Test
-	public void test_13() throws Exception {
+	public void test13() throws Exception {
 		test("Patient");
 	}
 
 	@Test
-	public void test_I_NoRefD9() throws Exception {
-		test("NoRefD9_I");
-	}
-
-	@Test
-	public void test_I_RefD9() throws Exception {
-		test("RefD9_I");
-	}
-
-	@Test
-	public void test_Large() throws Exception {
+	public void testLargeP() throws Exception {
 		long startTime = System.currentTimeMillis();
 		test("837PFile_Large");
 		long endTime = System.currentTimeMillis();
@@ -124,12 +114,22 @@ public class DebatcherTest {
 	}
 
 	@Test
-	public void test_P_NoRefD9() throws Exception {
+	public void testNoRefD9i() throws Exception {
+		test("NoRefD9_I");
+	}
+
+	@Test
+	public void testNoRefD9p() throws Exception {
 		test("NoRefD9_P");
 	}
 
 	@Test
-	public void test_P_RefD9() throws Exception {
+	public void testRefD9i() throws Exception {
+		test("RefD9_I");
+	}
+
+	@Test
+	public void testRefD9p() throws Exception {
 		test("RefD9_P");
 	}
 

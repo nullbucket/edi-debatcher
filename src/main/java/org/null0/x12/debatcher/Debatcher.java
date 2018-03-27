@@ -3,16 +3,18 @@ package org.null0.x12.debatcher;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 
 import org.apache.commons.lang3.StringUtils;
 import org.null0.x12.debatcher.DebatcherException.ErrorLevel;
@@ -23,18 +25,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Debatcher {
-	private static final Logger logger = LoggerFactory.getLogger(Debatcher.class);	
+	private static final Logger logger = LoggerFactory.getLogger(Debatcher.class);
 	private static final int hlBillProvLevelCode = 20; // Specific to claims (837). Decouple.
 	private static final int hlSubscriberLevelCode = 22; // Specific to claims (837). Decouple.	
 	private final Config config; // Class invariant, injected by greedy CTOR
 	private final Validator ediValidator; // Class invariant, injected by greedy CTOR
 	private final Metadata metadataLogger; // Class invariant, injected by greedy CTOR
-	private final Delimiters delimiters; // Class invariant, internal	
+	private Delimiters delimiters;
 	private long batchIdMetadata; // debatch() input param
 	private boolean checkForRefD9;
-	private StringBuffer claimBuffer;
+	private StringBuilder claimBuffer;
 	private int claimCnt; // TODO: specific to claims (837). Decouple.
-	private Map<String, Long> claimIdMap = new HashMap<String, Long>(); // debatch() output param
+	private Map<String, Long> claimIdMap = new HashMap<>(); // debatch() output param
 	private ClaimType claimType; // TODO: specific to claims (837). Decouple.
 	private String clm01; // TODO: specific to claims (873). Decouple.
 	private String clm05; // TODO: specific to claims (873). Decouple.	
@@ -42,15 +44,14 @@ public class Debatcher {
 	private int gsCnt;
 	private long gsIdMetadata;
 	private String gsSegment;
-	private StringBuffer headerBuffer;
+	private StringBuilder headerBuffer;
 	private int hlCnt;
 	private long hlIdMetadata;
-	private Stack<HierarchicalLevel> hlStack;
-	private InputStream inputStream; // debatch() input param
+	private Deque<HierarchicalLevel> hlStack;
 	private String isa13;
 	private int isaCnt;
 	private long isaIdMetadata;
-	private String isaSegment;	
+	private String isaSegment;
 	private boolean needToUpdateTransactionId; // reset for each call to debatch()
 	private int segmentCnt;
 	private SegmentReader segmentReader; // reset for each call to debatch()
@@ -65,10 +66,10 @@ public class Debatcher {
 		this.config = config;
 		this.ediValidator = ediValidator;
 		this.metadataLogger = metadataLogger;
-		this.delimiters = new Delimiters();
-		headerBuffer = new StringBuffer();
-		hlStack = new Stack<HierarchicalLevel>();
-		claimBuffer = new StringBuffer();
+		this.delimiters = null; // to be determined later by each ISA segment
+		headerBuffer = new StringBuilder();
+		hlStack = new ArrayDeque<>();
+		claimBuffer = new StringBuilder();
 	}
 
 	public void debatch(String transactionId, InputStream inputStream) throws Exception {
@@ -84,13 +85,12 @@ public class Debatcher {
 			logger.error(msg);
 			throw new NullPointerException(msg);
 		}
-		this.inputStream = inputStream;
 		this.transactionId = transactionId;
 		this.needToUpdateTransactionId = config.willUpdateTransactionId();
 		this.batchIdMetadata = batchIdMetadata < 0 ? this.metadataLogger.logBatchSubmissionData(transactionId) : batchIdMetadata;
 
 		// Initialize debatcher session state
-		this.segmentReader = new SegmentReader(this.config, this.delimiters, this.inputStream, this.batchIdMetadata);
+		this.segmentReader = new SegmentReader(this.config, inputStream, this.batchIdMetadata);
 		checkForRefD9 = false;
 		isaCnt = 0;
 		claimCnt = 0;
@@ -108,19 +108,11 @@ public class Debatcher {
 	}
 
 	private boolean canCheckForRefD9() {
-		if (ClaimType.INS == claimType) {
-			if ("CL1".equals(segmentReader.field(0))) {
-				return true;
-			}
-		} else if (ClaimType.PRO == claimType) {
-			if ("CLM".equals(segmentReader.field(0))) {
-				return true;
-			}
-		}
-		return false;
+		return ClaimType.INS == claimType && "CL1".equals(segmentReader.field(0))
+				|| ClaimType.PRO == claimType && "CLM".equals(segmentReader.field(0));
 	}
 
-	private ClaimType getClaimType(String segment) {
+	private ClaimType getClaimType() {
 		if (segmentReader.field(3).startsWith("005010X222")) {
 			return ClaimType.PRO; // Professional
 		} else if (segmentReader.field(3).startsWith("005010X223")) {
@@ -139,18 +131,18 @@ public class Debatcher {
 
 	private HashSet<String> idPattern(String pattern, char fieldDelimiter) {
 		if (fieldDelimiter != '*') {
-			pattern.replace(fieldDelimiter, '*');
+			pattern = pattern.replace(fieldDelimiter, '*');
 		}
-		return new HashSet<String>(Arrays.asList(pattern.split(",")));		
+		return new HashSet<>(Arrays.asList(pattern.split(",")));
 	}
-	
+
 	private void initRefD9idPattern() {
 		if (ClaimType.PRO == claimType) {
 			segmentsBeforeRefD9ForP = idPattern("CLM,DTP,PWK,CN1,AMT,REF*4N,REF*F5,REF*EW,REF*9F,REF*G1,REF*F8,REF*X4", delimiters.getField());
 		} else if (ClaimType.INS == claimType) {
 			segmentsBeforeRefD9ForI = idPattern("CL1,PWK,CN1,AMT,REF*4N,REF*9F,REF*G1,REF*F8,REF*9A,REF*9C,REF*LX", delimiters.getField());
 		}
-	}	
+	}
 
 	private boolean isAtRefD9() {
 		if (!checkForRefD9) {
@@ -175,18 +167,8 @@ public class Debatcher {
 				if ("REF".equals(firstElement)) {
 					firstElement = firstElement + delimiters.getField() + secondElement;
 				}
-
-				if (ClaimType.INS == claimType) // Institutional
-				{
-					if (!segmentsBeforeRefD9ForI.contains(firstElement)) {
-						return true; // REF*D9 needs to be added before the current segment
-					}
-				} else // Professional
-				{
-					if (!segmentsBeforeRefD9ForP.contains(firstElement)) {
-						return true; // REF*D9 needs to be added before the current segment
-					}
-				}
+				return ClaimType.INS == claimType && !segmentsBeforeRefD9ForI.contains(firstElement)
+						|| ClaimType.PRO == claimType && !segmentsBeforeRefD9ForP.contains(firstElement);
 			}
 		}
 		return false;
@@ -200,7 +182,7 @@ public class Debatcher {
 		while (true) {
 			if (!addedRefD9) {
 				if (isAtRefD9()) {
-					StringBuffer refD9 = new StringBuffer("REF").append(delimiters.getField())
+					StringBuilder refD9 = new StringBuilder("REF").append(delimiters.getField())
 							.append("D9")
 							.append(delimiters.getField())
 							.append(transactionId)
@@ -218,7 +200,8 @@ public class Debatcher {
 				if (!readClmSegment) {
 					clm01 = segmentReader.field(1);
 					if (clm01 == null || clm01.isEmpty()) {
-						ediValidator.logError(batchIdMetadata,
+						ediValidator.logError(
+								batchIdMetadata,
 								Validator.IK3_999_ERROR_MISS_DATA_ELEMENT, Error.TYPE_999,
 								"Missing CLM01 value");
 					}
@@ -248,9 +231,6 @@ public class Debatcher {
 			}
 		}
 	}
-
-	// TODO: Logic in these private methods below are specific to claims (837). We could decouple them a bit more.
-	// -----------------------------------------------------------------------------------------------------------
 
 	private void readFunctionGroups() throws Exception {
 		boolean readGsSegment = false;
@@ -335,7 +315,7 @@ public class Debatcher {
 						+ delimiters.getField() + hl.getLevelCode() + delimiters.getField() + hl.getChildcode();
 
 				while (true) {
-					if (hlStack.size() > 0) {
+					if (!hlStack.isEmpty()) {
 						if (hl.getLevelCode() <= hlStack.peek().getLevelCode())
 							hlStack.pop();
 						else
@@ -370,19 +350,15 @@ public class Debatcher {
 		}
 	}
 
-	private void readInterchangeControls() throws Exception {
+	private void readInterchangeControls() throws Exception {	
 		while (!segmentReader.fileReadCompleted()) {
 			String segment = segmentReader.next();
+			delimiters = segmentReader.getDelimiters(); // new delimiters for each ISA-IEA set
 
 			if (StringUtils.isAllBlank(segment)) {
 				logger.warn("Ignoring unexpected whitespace.");
 				continue;
 			}
-
-			/* TODO: we should probably delete this
-			if (segment == null || segment.equals("\r\n")) {
-				throw new DebatcherException ("Invalid Control Structure", DefaultValidator.TA1_ERROR_ISAIEA, Error.TYPE_TA1, ErrorLevel.BATCH, batchIdMetadata);
-			}*/
 
 			isaSegment = segment.replaceAll("\\r|\\n", "");
 			ediValidator.validate(batchIdMetadata, X12element.DATA_SEPARATOR, String.valueOf(delimiters.getField()), null);
@@ -414,7 +390,6 @@ public class Debatcher {
 			metadataLogger.updateIsaData(isaIdMetadata, gsCnt);
 
 			if (!"IEA".equals(segmentReader.field(0))) {
-				// throw new Exception("Missing IEA segment");
 				ediValidator.validate(batchIdMetadata, X12element.IEA01, null, null);
 			}
 
@@ -448,7 +423,7 @@ public class Debatcher {
 			segmentCnt = 1;
 
 			// Reset for each transaction set.
-			hlStack.clear(); 
+			hlStack.clear();
 			headerBuffer.setLength(0);
 
 			String st01 = segmentReader.field(1);
@@ -456,7 +431,7 @@ public class Debatcher {
 			ediValidator.validate(batchIdMetadata, X12element.ST01, st01, null);
 
 			st02 = segmentReader.field(2);
-			claimType = getClaimType(segmentReader.current()); // TODO: claim (837)-specific
+			claimType = getClaimType(); // TODO: claim (837)-specific
 			ediValidator.validate(batchIdMetadata, X12element.ST03, segmentReader.field(3), claimType.name());
 
 			hlCnt = 0;
@@ -473,6 +448,7 @@ public class Debatcher {
 
 			} else {
 				// Not a valid claim. For implementation revisit this section later.
+				// TODO: implement general handling; refactor to factory
 			}
 
 			if (segmentReader.isIeaFound() || segmentReader.field(0).equals("SE")) {
@@ -485,7 +461,6 @@ public class Debatcher {
 			String se02 = segmentReader.field(2);
 			if (!st02.equals(se02)) {
 				logger.error("ST02 {} & SE02 {} don't match", st02, se02);
-				// throw new Exception ("ST02 & SE02 don't match");
 				ediValidator.validate(batchIdMetadata, X12element.ST02, st02, se02);
 			}
 
@@ -500,42 +475,43 @@ public class Debatcher {
 	}
 
 	// TODO: roughly a third of this method is specific to claims (837), the rest is generic (concerned with EDI envelopes) 
-	private void writeClaim() throws Exception {
+	private void writeClaim() throws IOException {
 		String claimName = transactionId + "_" + String.format("%05d", claimCnt) + ".edi.txt";
 		String url = this.config.getOutputDirectory().toString() + claimName;
 		File statText = new File(url);
-		FileOutputStream os = new FileOutputStream(statText);
-		OutputStreamWriter osw = new OutputStreamWriter(os);
-		Writer w = new BufferedWriter(osw);
-		w.write(isaSegment);
-		w.write(delimiters.getSegmentTerminator());
-		w.write(gsSegment);
-		w.write(delimiters.getSegmentTerminator());
-		w.write(headerBuffer.toString());
 
-		Iterator<HierarchicalLevel> iter = hlStack.iterator();
-		int hlSegmentsCount = 0;
-		while (iter.hasNext()) {
-			final String hlString = iter.next().getHlDataBuffer().toString();
-			hlSegmentsCount += getSegmentCount(hlString);
-			w.write(hlString);
+		try (FileOutputStream os = new FileOutputStream(statText); // TODO: later this stream needs to be passed in
+				OutputStreamWriter osw = new OutputStreamWriter(os);
+				Writer w = new BufferedWriter(osw)) {
+
+			final char ter = delimiters.getSegmentTerminator();
+
+			w.write(isaSegment);
+			w.write(ter);
+			w.write(gsSegment);
+			w.write(ter);
+			w.write(headerBuffer.toString());
+
+			Iterator<HierarchicalLevel> iter = hlStack.iterator();
+			int hlSegmentsCount = 0;
+			while (iter.hasNext()) {
+				final String hlString = iter.next().getHlDataBuffer().toString();
+				hlSegmentsCount += getSegmentCount(hlString);
+				w.write(hlString);
+			}
+
+			w.write(claimBuffer.toString());
+
+			final String eol = delimiters.getEOL();
+			final char fld = delimiters.getField();
+			int headerSegmentsCnt = getSegmentCount(headerBuffer.toString());
+			int clmSegmentsCnt = getSegmentCount(claimBuffer.toString());
+			w.write(eol + "SE" + fld + (headerSegmentsCnt + hlSegmentsCount + clmSegmentsCnt + 1) + fld + st02 + ter);
+			w.write(eol + "GE" + fld + 1 + fld + gs06 + ter);
+			w.write(eol + "IEA" + fld + 1 + fld + isa13 + ter);
 		}
 
-		w.write(claimBuffer.toString());
-
-		int headerSegmentsCnt = getSegmentCount(headerBuffer.toString());
-		int clmSegmentsCnt = getSegmentCount(claimBuffer.toString());
 		int lxCnt = getLxCount(claimBuffer.toString());
-
-		String eol = delimiters.getEOL();
-		w.write(eol + "SE" + delimiters.getField() + (headerSegmentsCnt + hlSegmentsCount + clmSegmentsCnt + 1) + delimiters.getField() + st02 + delimiters.getSegmentTerminator());
-		w.write(eol + "GE" + delimiters.getField() + 1 + delimiters.getField() + gs06 + delimiters.getSegmentTerminator());
-		w.write(eol + "IEA" + delimiters.getField() + 1 + delimiters.getField() + isa13 + delimiters.getSegmentTerminator());
-
-		w.close();
-		osw.close();
-		os.close();
-
 		long claimId = metadataLogger.logClaim(batchIdMetadata, hlIdMetadata, clm01, clm05, lxCnt, null, claimName);
 		claimIdMap.put(claimName, claimId);
 

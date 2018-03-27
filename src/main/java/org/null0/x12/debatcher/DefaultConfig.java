@@ -1,10 +1,10 @@
 package org.null0.x12.debatcher;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -93,9 +93,7 @@ public class DefaultConfig implements Config {
 		try (InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(FILE_NAME)) {
 			p = new Properties();
 			p.load(stream);
-		} catch (IOException e) {
-			throw e;
-		}
+		} 
 		return p;
 	}
 
@@ -125,9 +123,6 @@ public class DefaultConfig implements Config {
 	private boolean initFromFile(String path) {
 		try {
 			Properties p = getPropertiesFromFile(path);
-			if (p == null) {
-				return false;
-			}
 			this.properties = p;
 		} catch (IOException e) {
 			return false;
@@ -151,7 +146,7 @@ public class DefaultConfig implements Config {
 		return StringUtils.isAllBlank(s) ? new String[0] : s.split(",");
 	}
 
-	private void setProperties() throws Exception {
+	private void setProperties() throws NotDirectoryException {
 		this.bufferSize = Integer.parseInt(this.properties.getProperty("buffer_size"));
 		this.outDir = toPath(this.properties.getProperty("output_directory"));
 		this.willUpdateTransactionId = BooleanUtils.toBoolean(this.properties.getProperty("will_update_transaction_id"));
@@ -164,7 +159,8 @@ public class DefaultConfig implements Config {
 			throw new NotDirectoryException("Path was empty or null");
 		}
 		final Path p = Paths.get(path);
-		if (!Files.exists(p) || !Files.isDirectory(p)) {
+		final File f = p.toFile();
+		if (!f.exists() || !f.isDirectory()) {
 			throw new NotDirectoryException(path);
 		}
 		return p;

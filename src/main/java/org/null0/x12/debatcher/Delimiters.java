@@ -1,5 +1,8 @@
 package org.null0.x12.debatcher;
 
+import org.null0.x12.debatcher.DebatcherException.ErrorLevel;
+import org.null0.x12.debatcher.Validator.Error;
+
 class Delimiters {
 	enum EdiWrapStyle {
 		Unix, Unknown, Unwrapped, Windows
@@ -8,16 +11,22 @@ class Delimiters {
 	private char dataElementSeparator;
 	private EdiWrapStyle ediWrap;
 	private String eol;
-	private String osNewLine;
-	private char segmentTerminator;;
+	private final String osNewLine;
+	private char segmentTerminator;
 
-	public Delimiters() {
-		this.osNewLine = System.getProperty("line.separator");
-
-		// Defaults
-		this.ediWrap = EdiWrapStyle.Unknown;
-		this.dataElementSeparator = '*';
-		this.segmentTerminator = '~';
+	public Delimiters(String isaSegment, long batchId) throws DebatcherException {
+		if (!"ISA".equals(isaSegment.substring(0, 3))) {
+			throw new DebatcherException(
+					"Not a valid Interchange Segment",
+					Validator.TA1_ERROR_ISAIEA,
+					Error.TYPE_TA1,
+					ErrorLevel.BATCH,
+					batchId);
+		}
+		osNewLine = System.getProperty("line.separator");
+		setField(isaSegment.substring(103, 104).charAt(0));
+		setSegmentTerminator(isaSegment.substring(105, 106).charAt(0));
+		setLineWrap(isaSegment);
 	}
 
 	public String getEOL() {
@@ -35,7 +44,7 @@ class Delimiters {
 	public String getOsNewLine() {
 		return osNewLine;
 	}
-
+	
 	public char getSegmentTerminator() {
 		return segmentTerminator;
 	}
@@ -44,35 +53,23 @@ class Delimiters {
 		this.dataElementSeparator = dataElementSeparator;
 	}
 
-	/** Reads up to maxBytesToScan for a data chunk in order to determine EDI line wrap style.
-	 * Outcome can be determined by looking at the return value or the new state given by getLineWrap.
-	 * 
-	 * @param dataChunk input byte buffer
-	 * @param maxBytesToScan max bytes to scan before stopping/failing
-	 * @return EdiWrapStyle This setter returns the wrap style (same as calling getLineWrap) */
-	public EdiWrapStyle setLineWrap(byte[] dataChunk, int maxBytesToScan) {
-		eol = "";
-		ediWrap = EdiWrapStyle.Unwrapped;
-		int max = Math.min(dataChunk.length, maxBytesToScan);
-		for (int i = 0; i < max - 1; i++) {
-			if (dataChunk[i] == 0x0D && dataChunk[i + 1] == 0x0A) {
-				ediWrap = EdiWrapStyle.Windows;
-				eol = "\r\n";
-				break;
-			} else if (dataChunk[i] == 0x0A) {
-				ediWrap = EdiWrapStyle.Unix; // \n
-				eol = "\n";
-				break;
-			}
-		}
-		return ediWrap;
-	}
-
-	public void setLineWrap(EdiWrapStyle ediWrap) {
-		this.ediWrap = ediWrap;
-	}
-
 	public void setSegmentTerminator(char segmentTerminator) {
 		this.segmentTerminator = segmentTerminator;
+	}
+	
+	private void setLineWrap(String dataChunk) {
+		// default
+		eol = "";
+		ediWrap = EdiWrapStyle.Unwrapped;
+		
+		if (segmentTerminator == '\n' || segmentTerminator == '\r') {
+			return; // if the segment terminator itself is eol, then treat it as logically unwrapped
+		} else if (dataChunk.contains("\r\n")) {
+			eol = "\r\n";
+			ediWrap = EdiWrapStyle.Windows;			
+		} else if (dataChunk.contains("\n")) {
+			eol = "\r";
+			ediWrap = EdiWrapStyle.Unix;			
+		}
 	}
 }

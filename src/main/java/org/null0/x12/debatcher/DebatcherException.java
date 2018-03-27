@@ -4,7 +4,7 @@ import org.null0.x12.debatcher.Validator.Error;
 
 // TODO: This was migrated from something too complex; simplify
 public class DebatcherException extends Exception {
-	public static enum ErrorLevel {
+	public enum ErrorLevel {
 		BATCH, CLAIMS
 	}	
 	private static final long serialVersionUID = 1L;
@@ -25,7 +25,7 @@ public class DebatcherException extends Exception {
 		return getStackTraceFromException(e, null);
 	}
 	
-	private static String getStackTraceFromException(Throwable e, StringBuffer buf) {
+	private static String getStackTraceFromException(Throwable e, StringBuilder buf) {
 		if (e == null) {
 			return null;
 		}
@@ -33,10 +33,7 @@ public class DebatcherException extends Exception {
 		StackTraceElement[] elements = e.getStackTrace();
 		if (elements != null && elements.length > 0) {
 			if (buf == null) {
-				if (e.getMessage() != null)
-					buf = new StringBuffer(e.getMessage());
-				else
-					buf = new StringBuffer();
+				buf = e.getMessage() == null ? new StringBuilder() : new StringBuilder(e.getMessage());
 			} else {
 				buf.append("\n\n");
 				buf.append(e.getMessage());
@@ -56,7 +53,7 @@ public class DebatcherException extends Exception {
 	}
 	
 	private String ediFileName;
-	private String errorCode;; // NO_UCD (use default)
+	private String errorCode; // NO_UCD (use default)
 	private ErrorLevel errorLevel;
 	private Error errorType;
 	private long idBatch;

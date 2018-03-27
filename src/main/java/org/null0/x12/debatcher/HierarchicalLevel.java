@@ -2,7 +2,7 @@ package org.null0.x12.debatcher;
 
 class HierarchicalLevel {
 	private int childcode;
-	private StringBuffer hlDataBuffer = new StringBuffer();
+	private StringBuilder hlDataBuffer = new StringBuilder();
 	private int id;
 	private int levelCode;
 	private int parentId;
@@ -11,7 +11,7 @@ class HierarchicalLevel {
 		return childcode;
 	}
 
-	public StringBuffer getHlDataBuffer() {
+	public StringBuilder getHlDataBuffer() {
 		return hlDataBuffer;
 	}
 
@@ -31,7 +31,7 @@ class HierarchicalLevel {
 		this.childcode = childcode;
 	}
 
-	public void setHlDataBuffer(StringBuffer hlDataBuffer) {
+	public void setHlDataBuffer(StringBuilder hlDataBuffer) {
 		this.hlDataBuffer = hlDataBuffer;
 	}
 

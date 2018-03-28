@@ -19,6 +19,11 @@ to be redesigned to be configurable: allow a validation to be turned off, and/or
 /* TODO: This class is a result of a serious lack of object-oriented design; smells horrible. */
 
 public class DefaultValidator implements Validator {
+	public enum ClaimType {
+		INS, OTH, PRO
+	}
+
+
 	private static final Logger logger = LoggerFactory.getLogger(DefaultValidator.class);
 	private final Config config;
 	private final List<String> isa13List = new ArrayList<>();
@@ -205,11 +210,6 @@ public class DefaultValidator implements Validator {
 		}
 
 		logger.error(msg);
-		throw new DebatcherException(
-				errorMessage,
-				errorCode,
-				errorType,
-				DebatcherException.ErrorLevel.BATCH,
-				batchId);
+		throw new DebatcherException(errorMessage, errorCode, errorType, batchId);
 	}
 }

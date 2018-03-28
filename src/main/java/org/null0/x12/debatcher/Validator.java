@@ -4,10 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public interface Validator {
-	enum ClaimType {
-		INS, OTH, PRO
-	};
-
 	public enum Error {
 		TYPE_999("999"), TYPE_BRE("BRE"), TYPE_TA1("TA1");
 		private static Map<String, Error> stringToEnum = new HashMap<>();

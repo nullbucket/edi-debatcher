@@ -1,6 +1,5 @@
 package org.null0.x12.debatcher;
 
-import org.null0.x12.debatcher.DebatcherException.ErrorLevel;
 import org.null0.x12.debatcher.Validator.Error;
 
 class Delimiters {
@@ -16,12 +15,7 @@ class Delimiters {
 
 	public Delimiters(String isaSegment, long batchId) throws DebatcherException {
 		if (!"ISA".equals(isaSegment.substring(0, 3))) {
-			throw new DebatcherException(
-					"Not a valid Interchange Segment",
-					Validator.TA1_ERROR_ISAIEA,
-					Error.TYPE_TA1,
-					ErrorLevel.BATCH,
-					batchId);
+			throw new DebatcherException("Not a valid Interchange Segment",	Validator.TA1_ERROR_ISAIEA,	Error.TYPE_TA1,	batchId);
 		}
 		osNewLine = System.getProperty("line.separator");
 		setField(isaSegment.substring(103, 104).charAt(0));

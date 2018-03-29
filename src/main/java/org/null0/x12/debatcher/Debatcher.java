@@ -44,7 +44,7 @@ public class Debatcher {
 	private long gsIdMetadata;
 	private String gsSegment;
 	private StringBuilder headerBuffer;
-	private int hlCnt;
+	//private int hlCnt;
 	private long hlIdMetadata;
 	private Deque<HierarchicalLevel> hlStack;
 	private String isa13;
@@ -189,7 +189,7 @@ public class Debatcher {
 							.append(String.format("%05d", claimCnt));
 					claimBuffer.append(delimiters.getEOL())
 							.append(refD9)
-							.append(delimiters.getSegmentTerminator()); // *** WRITE ***
+							.append(delimiters.getSegmentTerminator()); // will be used when we *** WRITE ***
 					addedRefD9 = true;
 				}
 			}
@@ -217,7 +217,9 @@ public class Debatcher {
 			}
 
 			if ("CLM".equals(segmentReader.field(0)) || "SE".equals(segmentReader.field(0)) || "HL".equals(segmentReader.field(0))) {
+				// *** WRITE ***
 				writeClaim(); // output, possible end to recursion
+				
 				if ("HL".equals(segmentReader.field(0))) {
 					// Let's go down the rabbit hole... (indirect recursion)
 					readHierarchicalLevels();
@@ -268,7 +270,6 @@ public class Debatcher {
 			String ge02 = segmentReader.field(2);
 			if (!gs06.equals(ge02)) {
 				logger.error("GS06 {} & GE02 {} don't match", gs06, ge02);
-				// throw new Exception("GS06 & GE02 don't match");
 				ediValidator.validate(batchIdMetadata, X12element.GS06, gs06, ge02);
 			}
 			ediValidator.validate(batchIdMetadata, X12element.GE01, segmentReader.field(1), String.valueOf(stCnt));
@@ -287,7 +288,8 @@ public class Debatcher {
 		}
 	}
 
-	private void readHierarchicalLevels() throws Exception {
+	private int readHierarchicalLevels() throws Exception {
+		int hlCnt = 0;
 		while (!segmentReader.isEOF()) {
 			String segment = segmentReader.current();
 			if ("HL".equals(segmentReader.field(0))) {
@@ -335,7 +337,7 @@ public class Debatcher {
 			if ("CLM".equals(segmentReader.field(0))) {
 				// Let's go down the rabbit hole...
 				readClaim();
-				return;
+				return hlCnt;
 			}
 		}
 
@@ -347,6 +349,7 @@ public class Debatcher {
 		} else {
 			ediValidator.validate(batchIdMetadata, X12element.IEA01, null, null);
 		}
+		return hlCnt;
 	}
 
 	private void readInterchangeControls() throws Exception {	
@@ -416,28 +419,35 @@ public class Debatcher {
 			headerBuffer.setLength(0);
 
 			String st01 = segmentReader.field(1);
-
 			ediValidator.validate(batchIdMetadata, X12element.ST01, st01, null);
 
 			st02 = segmentReader.field(2);
-			claimType = getClaimType(); // TODO: claim (837)-specific
-			ediValidator.validate(batchIdMetadata, X12element.ST03, segmentReader.field(3), claimType.name());
-
-			hlCnt = 0;
 			stIdMetadata = metadataLogger.logStData(gsIdMetadata, st02, segmentReader.current().trim());
 
-			initRefD9idPattern();
 
 			// TODO: This logic is specific to claims (837). We could decouple this a bit more.
+			claimType = getClaimType();
 			if ("837".equals(st01) && ClaimType.OTH != claimType) {
+				ediValidator.validate(batchIdMetadata, X12element.ST03, segmentReader.field(3), claimType.name());
+				initRefD9idPattern();
+				
 				readHeader();
 
 				// Let's go down the rabbit hole...
-				readHierarchicalLevels();
-
+				int hlCnt = readHierarchicalLevels();	
+				
+				metadataLogger.updateStData(stIdMetadata, hlCnt);
 			} else {
-				// Not a valid claim. For implementation revisit this section later.
 				// TODO: implement general handling; refactor to factory
+				
+				// Not an 837i/p claim, so skip all segments until we hit the end of the transaction set (SE).
+				do {
+					claimBuffer.append(segmentReader.current()).append(delimiters.getSegmentTerminator());
+					segmentReader.next();
+					segmentCnt++;
+				} while (!segmentReader.field(0).equals("SE"));
+				claimCnt++;
+				writeClaim(); // TODO: misnomer; actually means "write transaction set"	here				
 			}
 
 			if (segmentReader.isIeaFound() || segmentReader.field(0).equals("SE")) {
@@ -452,8 +462,6 @@ public class Debatcher {
 				logger.error("ST02 {} & SE02 {} don't match", st02, se02);
 				ediValidator.validate(batchIdMetadata, X12element.ST02, st02, se02);
 			}
-
-			metadataLogger.updateStData(stIdMetadata, hlCnt);
 
 			segmentReader.next();
 
@@ -473,12 +481,13 @@ public class Debatcher {
 				OutputStreamWriter osw = new OutputStreamWriter(os);
 				Writer w = new BufferedWriter(osw)) {
 
-			final char ter = delimiters.getSegmentTerminator();
-
+			final char trm = delimiters.getSegmentTerminator();
 			w.write(isaSegment);
-			w.write(ter);
+			w.write(trm);
 			w.write(gsSegment);
-			w.write(ter);
+			w.write(trm);
+			
+			final String eol = delimiters.getEOL();
 			w.write(headerBuffer.toString());
 
 			Iterator<HierarchicalLevel> iter = hlStack.iterator();
@@ -486,18 +495,20 @@ public class Debatcher {
 			while (iter.hasNext()) {
 				final String hlString = iter.next().getHlDataBuffer().toString();
 				hlSegmentsCount += getSegmentCount(hlString);
+				w.write(eol);
 				w.write(hlString);
 			}
 
 			w.write(claimBuffer.toString());
+			w.write(eol);
 
-			final String eol = delimiters.getEOL();
 			final char fld = delimiters.getField();
 			int headerSegmentsCnt = getSegmentCount(headerBuffer.toString());
 			int clmSegmentsCnt = getSegmentCount(claimBuffer.toString());
-			w.write(eol + "SE" + fld + (headerSegmentsCnt + hlSegmentsCount + clmSegmentsCnt + 1) + fld + st02 + ter);
-			w.write(eol + "GE" + fld + 1 + fld + gs06 + ter);
-			w.write(eol + "IEA" + fld + 1 + fld + isa13 + ter);
+			w.write("SE" + fld + (headerSegmentsCnt + hlSegmentsCount + clmSegmentsCnt + 1) + fld + st02 + trm + eol);
+			w.write("GE" + fld + 1 + fld + gs06 + trm + eol);
+			w.write("IEA" + fld + 1 + fld + isa13 + trm + eol);
+			w.flush(); // we were losing the last few writes without this
 		}
 
 		int lxCnt = getLxCount(claimBuffer.toString());

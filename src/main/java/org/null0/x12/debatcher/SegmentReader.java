@@ -47,8 +47,12 @@ class SegmentReader {
 	}
 
 	public String field(int position) {
-		if (fields == null || position >= fields.length) {
-			return null; // didn't call next() or out of bounds
+		if (fields == null) {
+			logger.warn("SegmentReader.fields was null; this will probably cause an error. Did you forget to call next()?");
+			return null;
+		}
+		if (position >= fields.length) {
+			return ""; // either out of bounds OR we just ended early because field was optional
 		}
 		return fields[position].replaceAll("\\r|\\n", "");
 	}

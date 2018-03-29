@@ -2,9 +2,8 @@ package org.null0.x12.debatcher.test;
 
 import java.io.InputStream;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.null0.x12.debatcher.Config;
 import org.null0.x12.debatcher.Debatcher;
@@ -15,14 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DebatcherTest {
+	private static final boolean doClean = false;
 	private static final Logger logger = LoggerFactory.getLogger(DebatcherTest.class);
 	private Debatcher debatcher;
-
-	@BeforeClass
-	public static void setUpClass() {
-		// TODO: delete output test directory... or avoid files altogether and stream to
-		// memory
-	}
 
 	@Before
 	public void setUp() throws Exception {
@@ -30,9 +24,11 @@ public class DebatcherTest {
 		debatcher = new Debatcher(config, new DefaultValidator(config),	new DefaultMetadata());
 	}
 
-	@After
-	public void tearDown() {
-		TestFileCleaner.clean(".edi.txt");
+	@AfterClass
+	public static void tearDown() {
+		if (doClean) {
+			TestFileCleaner.clean(".edi.txt");			
+		}
 	}
 
 	@Test(expected = NullPointerException.class)
@@ -131,6 +127,11 @@ public class DebatcherTest {
 	@Test
 	public void testRefD9p() throws Exception {
 		test("RefD9_P");
+	}
+	
+	@Test
+	public void testNonClaims() throws Exception {
+		test("810 - 2 ISAs - 1 STs - 2 STs");
 	}
 
 	private InputStream getInputStream(String name) throws Exception {

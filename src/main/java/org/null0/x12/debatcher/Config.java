@@ -7,6 +7,7 @@ public interface Config {
 	Path getOutputDirectory();
 	String[] getValidReceivers();
 	String[] getValidSenders();
-	boolean willUpdateTransactionId();
+	boolean ignoreWhitespaceBetweenSegments();
 	boolean willRejectOnValidationError();
+	boolean willUpdateTransactionId();
 }

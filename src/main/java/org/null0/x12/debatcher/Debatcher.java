@@ -212,6 +212,7 @@ public class Debatcher {
 			segmentReader.next();
 			segmentCnt++;
 
+			// TODO: this is questionable. Why are we exiting on an empty line?
 			if ("".equals(segmentReader.current())) {
 				return; // exit recursion
 			}
@@ -340,15 +341,7 @@ public class Debatcher {
 				return hlCnt;
 			}
 		}
-
-		if (segmentReader.isIeaFound()) {
-			// throw new DebatcherException("Missing CLM segment",
-			// DefaultValidator.IK3_999_ERROR_MISS_SEG, Error.TYPE_999,
-			// ErrorLevel.BATCH, batchIdMetadata, ERROR_OR_EXCEPTION.Exception);
-			ediValidator.logError(batchIdMetadata, Validator.IK3_999_ERROR_MISS_SEG, Error.TYPE_999, "Missing CLM segment");
-		} else {
-			ediValidator.validate(batchIdMetadata, X12element.IEA01, null, null);
-		}
+		logger.warn("Didn't expect to get here, errors may follow...");
 		return hlCnt;
 	}
 
@@ -399,8 +392,9 @@ public class Debatcher {
 
 			String iea02 = segmentReader.field(2);
 			if (!isa13.equals(iea02)) {
-				logger.error("ISA13 {} & IEA02 {} don't match", isa13, iea02);
-				throw new DebatcherException("ISA13 & IEA02 don't match", Validator.TA1_ERROR_ISA13, Error.TYPE_TA1, batchIdMetadata);
+				String error = "ISA13 {} & IEA02 {} don't match";
+				logger.error(error, isa13, iea02);
+				throw new DebatcherException(error, Validator.TA1_ERROR_ISA13, Error.TYPE_TA1, batchIdMetadata);
 			}
 		}
 		metadataLogger.updateBatchSubmissionData(batchIdMetadata, isaCnt);
@@ -409,7 +403,8 @@ public class Debatcher {
 	private void readTransactionSets() throws Exception {
 		while (true) {
 			if (!"ST".equals(segmentReader.field(0))) {
-				throw new DebatcherException("Missing ST segment", Validator.IK3_999_ERROR_MISS_SEG, Error.TYPE_999, batchIdMetadata);
+				String error = String.format("Missing ST segment. Segment text is '%s'.", segmentReader.current());
+				throw new DebatcherException(error, Validator.IK3_999_ERROR_MISS_SEG, Error.TYPE_999, batchIdMetadata);
 			}
 			stCnt++;
 			segmentCnt = 1;
@@ -445,7 +440,7 @@ public class Debatcher {
 					claimBuffer.append(segmentReader.current()).append(delimiters.getSegmentTerminator());
 					segmentReader.next();
 					segmentCnt++;
-				} while (!segmentReader.field(0).equals("SE"));
+				} while (!segmentReader.field(0).equals("SE") /* && !segmentReader.isEOF()*/);
 				claimCnt++;
 				writeClaim(); // TODO: misnomer; actually means "write transaction set"	here				
 			}

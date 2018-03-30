@@ -1,23 +1,18 @@
 package org.null0.x12.debatcher;
 
+import org.apache.commons.lang3.StringUtils;
 import org.null0.x12.debatcher.Validator.Error;
 
 class Delimiters {
-	enum EdiWrapStyle {
-		Unix, Unknown, Unwrapped, Windows
-	}
-	
 	private char dataElementSeparator;
-	private EdiWrapStyle ediWrap;
 	private String eol;
-	private final String osNewLine;
 	private char segmentTerminator;
 
 	public Delimiters(String isaSegment, long batchId) throws DebatcherException {
 		if (!"ISA".equals(isaSegment.substring(0, 3))) {
-			throw new DebatcherException("Not a valid Interchange Segment",	Validator.TA1_ERROR_ISAIEA,	Error.TYPE_TA1,	batchId);
+			String error = String.format("Not a valid Interchange Segment. The first 106 characters are '%s'.", StringUtils.left(isaSegment, 106));
+			throw new DebatcherException(error,	Validator.TA1_ERROR_ISAIEA,	Error.TYPE_TA1,	batchId);
 		}
-		osNewLine = System.getProperty("line.separator");
 		setField(isaSegment.substring(103, 104).charAt(0));
 		setSegmentTerminator(isaSegment.substring(105, 106).charAt(0));
 		setLineWrap(isaSegment);
@@ -29,14 +24,6 @@ class Delimiters {
 
 	public char getField() {
 		return dataElementSeparator;
-	}
-
-	public EdiWrapStyle getLineWrap() {
-		return ediWrap;
-	}
-
-	public String getOsNewLine() {
-		return osNewLine;
 	}
 	
 	public char getSegmentTerminator() {
@@ -51,19 +38,14 @@ class Delimiters {
 		this.segmentTerminator = segmentTerminator;
 	}
 	
-	private void setLineWrap(String dataChunk) {
-		// default
-		eol = "";
-		ediWrap = EdiWrapStyle.Unwrapped;
-		
+	private void setLineWrap(String dataChunk) {		
+		eol = ""; // default	
 		if (segmentTerminator == '\n' || segmentTerminator == '\r') {
-			return; // if the segment terminator itself is eol, then treat it as logically unwrapped
+			return; // if the segment terminator itself is eol then treat it as logically unwrapped
 		} else if (dataChunk.contains("\r\n")) {
 			eol = "\r\n";
-			ediWrap = EdiWrapStyle.Windows;			
 		} else if (dataChunk.contains("\n")) {
 			eol = "\r";
-			ediWrap = EdiWrapStyle.Unix;			
 		}
 	}
 }

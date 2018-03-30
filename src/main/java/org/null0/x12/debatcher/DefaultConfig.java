@@ -27,6 +27,7 @@ public class DefaultConfig implements Config {
 	public static final String ENVAR_NAME = "edi_debatch_config_file"; // If this environment variable exists it must contain full valid path to properties file	
 	private static final String FILE_NAME = "debatcher.properties"; // Default expected local properties file name if config_env_name environment variable does not exist 
 	private static final Logger logger = LoggerFactory.getLogger(Config.class); // Logger
+	private boolean ignoreWhitespaceBetweenSegments; // from debatcher.properties
 	private int bufferSize;
 	private Environment environment;
 	private Path outDir; // from debatcher.properties
@@ -53,7 +54,6 @@ public class DefaultConfig implements Config {
 			logger.error("Exception in CTOR", e);
 		}
 	}
-	
 
 	@Override
 	public int getBufferSize() {
@@ -83,6 +83,11 @@ public class DefaultConfig implements Config {
 	@Override
 	public boolean willUpdateTransactionId() {
 		return willUpdateTransactionId;
+	}
+	
+	@Override
+	public boolean ignoreWhitespaceBetweenSegments() {
+		return ignoreWhitespaceBetweenSegments;
 	}
 
 	private Properties getPropertiesFromFile(String path) throws IOException {
@@ -142,10 +147,11 @@ public class DefaultConfig implements Config {
 
 	private void setProperties() throws NotDirectoryException {
 		this.bufferSize = Integer.parseInt(this.properties.getProperty("buffer_size"));
+		this.ignoreWhitespaceBetweenSegments = BooleanUtils.toBoolean(this.properties.getProperty("ignore_whitespace_between_segments"));
 		this.outDir = toPath(this.properties.getProperty("output_directory"));
-		this.willUpdateTransactionId = BooleanUtils.toBoolean(this.properties.getProperty("will_update_transaction_id"));
-		this.validSendersISA06 = setList("valid_senders_isa06");
 		this.validReceiversISA08 = setList("valid_receivers_isa08");
+		this.validSendersISA06 = setList("valid_senders_isa06");
+		this.willUpdateTransactionId = BooleanUtils.toBoolean(this.properties.getProperty("will_update_transaction_id"));
 	}
 	
 	private String toAbsolute(final String path) {

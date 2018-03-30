@@ -4,6 +4,7 @@ import java.io.EOFException;
 import java.io.InputStream;
 import java.util.Arrays;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,7 @@ class SegmentReader {
 		if (position >= fields.length) {
 			return ""; // either out of bounds OR we just ended early because field was optional
 		}
-		return fields[position].replaceAll("\\r|\\n", "");
+		return fields[position];
 	}
 
 	public boolean fileReadCompleted() {
@@ -98,6 +99,7 @@ class SegmentReader {
 	public void setCurrent(String value) {
 		segment = value;
 		if (segment != null) {
+			segment = StringUtils.stripStart(segment, config.ignoreWhitespaceBetweenSegments() ? null : "\r\n");
 			fields = segment.split("\\" + delimiters.getField()); // all fields for current segment
 		}
 	}

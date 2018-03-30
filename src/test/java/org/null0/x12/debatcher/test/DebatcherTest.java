@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DebatcherTest {
-	private static final boolean doClean = false;
+	private static final boolean doClean = true;
 	private static final Logger logger = LoggerFactory.getLogger(DebatcherTest.class);
 	private Debatcher debatcher;
 
@@ -110,6 +110,11 @@ public class DebatcherTest {
 	}
 
 	@Test
+	public void testNonClaims() throws Exception {
+		test("810 - 2 ISAs - 1 STs - 2 STs");
+	}
+	
+	@Test
 	public void testNoRefD9i() throws Exception {
 		test("NoRefD9_I");
 	}
@@ -127,11 +132,6 @@ public class DebatcherTest {
 	@Test
 	public void testRefD9p() throws Exception {
 		test("RefD9_P");
-	}
-	
-	@Test
-	public void testNonClaims() throws Exception {
-		test("810 - 2 ISAs - 1 STs - 2 STs");
 	}
 
 	private InputStream getInputStream(String name) throws Exception {

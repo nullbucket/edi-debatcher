@@ -175,6 +175,14 @@ public class ValidatorTest {
 	}
 
 	private Debatcher createDebatcher() {
+		Config mockConfig = createMockConfig();
+		return new Debatcher(
+				mockConfig,
+				new DefaultValidator(mockConfig),
+				new DefaultMetadata());
+	}
+	
+	private Config createMockConfig() {
 		Config mockConfig = mock(Config.class);
 		when(mockConfig.getOutputDirectory()).thenReturn(Paths.get("./"));
 		when(mockConfig.getBufferSize()).thenReturn(1024);
@@ -182,11 +190,7 @@ public class ValidatorTest {
 		when(mockConfig.willRejectOnValidationError()).thenReturn(true);
 		when(mockConfig.getValidReceivers()).thenReturn(new String[] { "80882" });
 		when(mockConfig.getValidSenders()).thenReturn(new String[] { "ENH9999" });
-
-		return new Debatcher(
-				mockConfig,
-				new DefaultValidator(mockConfig),
-				new DefaultMetadata());
+		return mockConfig;		
 	}
 
 	private InputStream openStream(String id) throws Exception {

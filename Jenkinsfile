@@ -4,10 +4,10 @@ pipeline {
     stage('Initialize') {
       steps {
         sh '''
-                    echo "PATH = ${PATH}"
-                    echo "M2_HOME = ${M2_HOME}"
-                    mvn -version 
-                '''
+           echo "PATH = ${PATH}"
+           echo "M2_HOME = ${M2_HOME}"
+           mvn --version 
+           '''
       }
     }
     stage('Build') {
@@ -17,9 +17,7 @@ pipeline {
       post {
         success {
           junit 'target/surefire-reports/**/*.xml'
-
         }
-
       }
     }
   }
@@ -29,9 +27,7 @@ pipeline {
   }
   post {
     always {
-      deleteDir()
-
+    deleteDir()
     }
-
   }
 }
